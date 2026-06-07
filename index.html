@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>ClawOne Pro 財務連動系統</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>ClawOne Pro 財務管理</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -27,22 +28,25 @@
         .nav-item.active { color: var(--primary); font-weight: bold; }
         .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 3px; }
 
-        /* 卡片與流水帳 */
+        /* 卡片與元件 */
         .stat-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
-        .history-item { display: flex; align-items: center; padding: 12px 5px; border-bottom: 1px solid #222; font-size: 0.8rem; }
+        .history-item { display: flex; align-items: center; padding: 10px 5px; border-bottom: 1px solid #222; font-size: 0.8rem; }
         .history-info { flex: 1; }
         .history-time { font-size: 0.65rem; color: #666; display: block; }
-        .history-amt { font-weight: bold; margin: 0 10px; min-width: 70px; text-align: right; }
-        .btn-edit-log { background: #333; color: #aaa; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; }
-        
-        .income-text { color: var(--paid); }
-        .expense-text { color: var(--unpaid); }
+        .history-amt { font-weight: bold; margin: 0 10px; text-align: right; }
+        .income-text { color: var(--paid); } .expense-text { color: var(--unpaid); }
 
-        /* 輸入框 */
-        input, select { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        .btn-action { width: 100%; padding: 15px; background: var(--primary); color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; margin-top: 5px; }
+        /* 輸入框與按鈕 */
+        input { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .btn-action { width: 100%; padding: 15px; background: var(--primary); color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; }
         
-        /* 平面圖佈局 (維持原本) */
+        /* 狀態切換按鈕組 */
+        .status-toggle-group { display: flex; gap: 10px; margin: 10px 0; }
+        .status-btn { flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #333; background: #111; color: #666; text-align: center; font-weight: bold; transition: 0.2s; }
+        .status-btn.active-unpaid { background: var(--unpaid); color: white; border-color: var(--unpaid); }
+        .status-btn.active-paid { background: var(--paid); color: white; border-color: var(--paid); }
+
+        /* 平面圖佈局 */
         .map-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .back-wall-row { display: flex; gap: 10px; justify-content: center; width: 100%; margin-bottom: 5px; }
         .floor-plan { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; min-height: 500px; }
@@ -55,40 +59,37 @@
         .machine b { font-size: 0.85rem; color: #fff; } .machine small { font-size: 0.55rem; color: #aaa; text-align: center; }
 
         /* 彈窗 */
-        .modal { display: none; position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 20px; border-radius: 15px; z-index: 2000; width: 85%; border: 1px solid #333; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 25px; border-radius: 15px; z-index: 2000; width: 90%; max-width: 450px; border: 1px solid #333; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1500; }
-        .total-box { background: #333; padding: 10px; border-radius: 8px; text-align: right; color: var(--primary); font-weight: bold; margin-top: 10px; }
+        .total-box { background: #333; padding: 12px; border-radius: 8px; text-align: right; color: var(--primary); font-weight: bold; margin-top: 10px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
     <!-- 總覽 -->
     <div id="page-overview" class="page active">
-        <h2 style="color: var(--primary); margin: 0 0 10px 0;">📊 場地總覽</h2>
+        <h2 style="color: var(--primary); margin-top: 0;">📊 場地總覽</h2>
         <div class="stat-card" style="border-left-color: gold;">
-            <div style="color: #888; font-size: 0.8rem;">國庫總餘額</div>
-            <div style="font-size: 2rem; font-weight: bold; color: gold; margin-top: 5px;">$ <span id="stat-balance">0</span></div>
+            <div style="color: #888; font-size: 0.8rem;">國庫餘額</div>
+            <div style="font-size: 2.2rem; font-weight: bold; color: gold;">$ <span id="stat-balance">0</span></div>
         </div>
         <div class="stat-card">
             <div style="color: #888; font-size: 0.8rem;">收租進度 (36台)</div>
             <div style="display: flex; gap: 30px; margin-top: 5px;">
-                <div><span style="color: var(--paid); font-size: 1.5rem;" id="stat-paid">0</span> <small>已繳</small></div>
-                <div><span style="color: var(--unpaid); font-size: 1.5rem;" id="stat-unpaid">0</span> <small>未繳</small></div>
+                <div><span style="color: var(--paid); font-size: 1.8rem;" id="stat-paid">0</span> <small>已繳</small></div>
+                <div><span style="color: var(--unpaid); font-size: 1.8rem;" id="stat-unpaid">0</span> <small>未繳</small></div>
             </div>
         </div>
-        <h3 style="font-size: 0.9rem; color: #666; margin-top: 15px;">近期帳目</h3>
         <div id="mini-history"></div>
     </div>
 
-    <!-- 支出均分 (維持原本) -->
+    <!-- 支出 (股東) -->
     <div id="page-expenses" class="page">
-        <h2 style="color: var(--primary); margin: 0 0 10px 0;">🤝 股東支出均分</h2>
-        <div class="stat-card" id="settlement-ui">
-             <!-- 股東邏輯腳本會填入 -->
-        </div>
+        <h2 style="color: var(--primary); margin-top: 0;">🤝 股東均分</h2>
+        <div class="stat-card" id="settlement-ui">支出均分邏輯載入中...</div>
     </div>
 
-    <!-- 台主資料平面圖 -->
+    <!-- 台主平面圖 -->
     <div id="page-machines" class="page">
         <div class="map-wrapper">
             <div class="back-wall-row" id="area-back"></div>
@@ -106,19 +107,12 @@
         </div>
     </div>
 
-    <!-- 國庫流水帳 (升級版) -->
+    <!-- 國庫流水帳 -->
     <div id="page-treasury" class="page">
-        <h2 style="color: var(--primary); margin: 0 0 10px 0;">🏦 國庫流水帳</h2>
-        <div class="stat-card">
-            <select id="t-type"><option value="income">➕ 收入項目</option><option value="expense">➖ 支出項目</option></select>
-            <input type="number" id="t-amount" placeholder="金額">
-            <input type="text" id="t-desc" placeholder="說明">
-            <button class="btn-action" onclick="addTransaction()">記帳入庫</button>
-        </div>
+        <h2 style="color: var(--primary); margin-top: 0;">🏦 國庫流水帳</h2>
         <div id="full-history"></div>
     </div>
 
-    <!-- 底部導覽 -->
     <div class="nav-bar">
         <div class="nav-item active" onclick="switchPage('overview', this)"><span>📊</span>總覽</div>
         <div class="nav-item" onclick="switchPage('expenses', this)"><span>🤝</span>支出</div>
@@ -126,36 +120,33 @@
         <div class="nav-item" onclick="switchPage('treasury', this)"><span>🏦</span>國庫</div>
     </div>
 
-    <!-- 遮罩 -->
     <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
 
-    <!-- 機台設定彈窗 -->
+    <!-- 機器管理彈窗 (修正狀態切換) -->
     <div id="modal-machine" class="modal">
         <h3 style="margin:0; color: var(--primary);">租金管理</h3>
-        <input type="text" id="m-owner" placeholder="台主姓名">
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <input type="number" id="m-rent" placeholder="場租" oninput="calcTotal()">
-            <input type="number" id="m-acFee" placeholder="冷氣" oninput="calcTotal()">
+        <label style="font-size:0.8rem; color:#666;">台主姓名</label>
+        <input type="text" id="m-owner" placeholder="請輸入姓名">
+        
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;"><label style="font-size:0.7rem; color:#666;">場租</label><input type="number" id="m-rent" oninput="calcTotal()"></div>
+            <div style="flex:1;"><label style="font-size:0.7rem; color:#666;">冷氣</label><input type="number" id="m-acFee" oninput="calcTotal()"></div>
         </div>
-        <input type="number" id="m-actFee" placeholder="活動費" oninput="calcTotal()">
-        <div class="total-box">應收：$<span id="m-total">0</span></div>
-        <select id="m-status"><option value="unpaid">❌ 未繳費</option><option value="paid">✅ 已繳費</option></select>
-        <button class="btn-action" onclick="saveMachine()">確認存檔</button>
-    </div>
+        <label style="font-size:0.7rem; color:#666;">活動費</label>
+        <input type="number" id="m-actFee" oninput="calcTotal()">
 
-    <!-- 流水帳編輯彈窗 -->
-    <div id="modal-edit-log" class="modal">
-        <h3 style="margin:0; color: var(--primary);">編輯帳目</h3>
-        <label>收支類別</label>
-        <select id="edit-log-type"><option value="income">收入</option><option value="expense">支出</option></select>
-        <label>金額</label><input type="number" id="edit-log-amount">
-        <label>說明</label><input type="text" id="edit-log-desc">
-        <button class="btn-action" onclick="saveEditedLog()">更新紀錄</button>
-        <button class="btn-action" style="background:#444; color:white;" onclick="deleteLog()">刪除此紀錄</button>
+        <div class="total-box">應收總計：$ <span id="m-total">0</span></div>
+
+        <label style="margin-top:15px; display:block;">租金狀態 (點擊切換)</label>
+        <div class="status-toggle-group">
+            <div id="btn-unpaid" class="status-btn" onclick="setStatus('unpaid')">❌ 未繳費</div>
+            <div id="btn-paid" class="status-btn" onclick="setStatus('paid')">✅ 已繳費</div>
+        </div>
+        
+        <button class="btn-action" onclick="saveMachine()">確認存檔並關閉</button>
     </div>
 
 <script>
-    // --- Firebase 設定 ---
     const firebaseConfig = {
         apiKey: "AIzaSyD9oJirgoJCTU7h-ODfSpfwC80E5fqze2A",
         authDomain: "clawone-6445c.firebaseapp.com",
@@ -166,8 +157,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const COLL_M = "claw_machines"; const COLL_T = "claw_treasury"; 
-    const COLL_LOG = "claw_transactions";
+    const COLL_M = "claw_machines"; const COLL_T = "claw_treasury"; const COLL_LOG = "claw_transactions";
 
     const layout = {
         back: [33, 34, 35], left: [1,2,3,4,5,6,7,8,9,10],
@@ -175,50 +165,12 @@
         rightMega: [31,32], rightNormal: [11,12,13,14,15,16], big: [17]
     };
 
-    let currentId = null; let currentBalance = 0; let oldStatus = "unpaid";
-    let editingLogId = null;
+    let currentId = null; let currentBalance = 0; let oldStatus = "unpaid"; let selectedStatus = "unpaid";
 
-    function switchPage(pageId, el) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('page-' + pageId).classList.add('active'); el.classList.add('active');
-    }
-
-    // 格式化時間
-    function formatTime(timestamp) {
-        if (!timestamp) return "";
-        const date = timestamp.toDate();
-        return `${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getDate().toString().padStart(2,'0')} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
-    }
-
-    function createMachine(num, type='normal') {
-        const docId = `No_${num.toString().padStart(2, '0')}`;
-        const div = document.createElement('div');
-        div.className = (type==='big')?'machine big-machine':(type==='mega'?'machine mega-machine':'machine');
-        div.id = docId; div.innerHTML = `<b>${num}</b><small id="name-${docId}"></small>`;
-        div.onclick = () => openMachineModal(docId);
-        db.collection(COLL_M).doc(docId).onSnapshot(doc => {
-            if(doc.exists) {
-                const d = doc.data(); document.getElementById(`name-${docId}`).innerText = d.owner || "";
-                div.classList.remove('paid', 'unpaid'); div.classList.add(d.status || 'unpaid');
-                updateOverviewStats();
-            }
-        });
-        return div;
-    }
-
-    // 機台邏輯
-    function openMachineModal(id) {
-        currentId = id; document.getElementById('overlay').style.display = 'block'; document.getElementById('modal-machine').style.display = 'block';
-        db.collection(COLL_M).doc(id).get().then(doc => {
-            const d = doc.exists ? doc.data() : { rent: 3000, acFee: 300, actFee: 300, status: "unpaid" };
-            document.getElementById('m-owner').value = d.owner || "";
-            document.getElementById('m-rent').value = d.rent;
-            document.getElementById('m-acFee').value = d.acFee;
-            document.getElementById('m-actFee').value = d.actFee;
-            document.getElementById('m-status').value = d.status;
-            oldStatus = d.status; calcTotal();
-        });
+    function setStatus(s) {
+        selectedStatus = s;
+        document.getElementById('btn-unpaid').className = 'status-btn' + (s === 'unpaid' ? ' active-unpaid' : '');
+        document.getElementById('btn-paid').className = 'status-btn' + (s === 'paid' ? ' active-paid' : '');
     }
 
     async function saveMachine() {
@@ -227,93 +179,62 @@
             rent: parseInt(document.getElementById('m-rent').value) || 0,
             acFee: parseInt(document.getElementById('m-acFee').value) || 0,
             actFee: parseInt(document.getElementById('m-actFee').value) || 0,
-            status: document.getElementById('m-status').value
+            status: selectedStatus
         };
         const total = d.rent + d.acFee + d.actFee;
 
-        // 邏輯 1: 從未繳變已繳 -> 增加紀錄
-        if (oldStatus === "unpaid" && d.status === "paid") {
+        if (oldStatus === "unpaid" && selectedStatus === "paid") {
             await recordTransaction('income', `${currentId} 繳費 - ${d.owner}`, total, currentId);
-        }
-        // 邏輯 2: 從已繳變未繳 -> 刪除紀錄
-        else if (oldStatus === "paid" && d.status === "unpaid") {
+        } else if (oldStatus === "paid" && selectedStatus === "unpaid") {
             await deleteLastMachineIncome(currentId);
         }
 
-        db.collection(COLL_M).doc(currentId).set(d, {merge:true}).then(() => closeAllModals());
+        await db.collection(COLL_M).doc(currentId).set(d, {merge:true});
+        closeAllModals();
     }
 
-    // 刪除該機台最近一筆收入
-    async function deleteLastMachineIncome(mId) {
-        const snap = await db.collection(COLL_LOG).where('machineId', '==', mId).where('type', '==', 'income').orderBy('time', 'desc').limit(1).get();
-        if (!snap.empty) {
-            const logDoc = snap.docs[0];
-            const logData = logDoc.data();
-            await db.collection(COLL_LOG).doc(logDoc.id).delete();
-            // 扣回國庫
-            db.collection(COLL_T).doc('main').set({ amount: currentBalance - logData.amount });
-        }
-    }
-
-    // 國庫核心邏輯
     async function recordTransaction(type, title, amount, machineId = null) {
-        await db.collection(COLL_LOG).add({
-            type, title, amount, machineId,
-            time: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await db.collection(COLL_LOG).add({ type, title, amount, machineId, time: firebase.firestore.FieldValue.serverTimestamp() });
         const newBal = (type === 'income') ? currentBalance + amount : currentBalance - amount;
         await db.collection(COLL_T).doc('main').set({ amount: newBal });
     }
 
-    function addTransaction() {
-        const amt = parseInt(document.getElementById('t-amount').value);
-        const desc = document.getElementById('t-desc').value;
-        const type = document.getElementById('t-type').value;
-        if(!amt || !desc) return alert("請填寫金額與說明");
-        recordTransaction(type, desc, amt);
-        document.getElementById('t-amount').value = ""; document.getElementById('t-desc').value = "";
+    async function deleteLastMachineIncome(mId) {
+        const snap = await db.collection(COLL_LOG).where('machineId', '==', mId).where('type', '==', 'income').orderBy('time', 'desc').limit(1).get();
+        if (!snap.empty) {
+            const logDoc = snap.docs[0];
+            await db.collection(COLL_LOG).doc(logDoc.id).delete();
+            await db.collection(COLL_T).doc('main').set({ amount: currentBalance - logDoc.data().amount });
+        }
     }
 
-    // 編輯帳目
-    function openEditLog(id) {
-        editingLogId = id;
-        db.collection(COLL_LOG).doc(id).get().then(doc => {
-            const d = doc.data();
-            document.getElementById('edit-log-type').value = d.type;
-            document.getElementById('edit-log-amount').value = d.amount;
-            document.getElementById('edit-log-desc').value = d.title;
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('modal-edit-log').style.display = 'block';
+    function openMachineModal(id) {
+        currentId = id; document.getElementById('overlay').style.display = 'block'; document.getElementById('modal-machine').style.display = 'block';
+        db.collection(COLL_M).doc(id).get().then(doc => {
+            const d = doc.exists ? doc.data() : { rent: 3000, acFee: 300, actFee: 300, status: "unpaid" };
+            document.getElementById('m-owner').value = d.owner || "";
+            document.getElementById('m-rent').value = d.rent;
+            document.getElementById('m-acFee').value = d.acFee;
+            document.getElementById('m-actFee').value = d.actFee;
+            oldStatus = d.status || "unpaid";
+            setStatus(oldStatus);
+            calcTotal();
         });
     }
 
-    async function saveEditedLog() {
-        const oldSnap = await db.collection(COLL_LOG).doc(editingLogId).get();
-        const oldD = oldSnap.data();
-        const newD = {
-            type: document.getElementById('edit-log-type').value,
-            amount: parseInt(document.getElementById('edit-log-amount').value),
-            title: document.getElementById('edit-log-desc').value
-        };
-        // 重新計算國庫餘額
-        let tempBal = (oldD.type === 'income') ? currentBalance - oldD.amount : currentBalance + oldD.amount;
-        let finalBal = (newD.type === 'income') ? tempBal + newD.amount : tempBal - newD.amount;
-
-        await db.collection(COLL_LOG).doc(editingLogId).update(newD);
-        await db.collection(COLL_T).doc('main').set({ amount: finalBal });
-        closeAllModals();
+    // 基礎功能
+    function switchPage(p, el) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('page-'+p).classList.add('active'); el.classList.add('active'); }
+    function calcTotal() { const r=parseInt(document.getElementById('m-rent').value)||0, ac=parseInt(document.getElementById('m-acFee').value)||0, act=parseInt(document.getElementById('m-actFee').value)||0; document.getElementById('m-total').innerText = (r+ac+act).toLocaleString(); }
+    function closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); document.getElementById('overlay').style.display='none'; }
+    function createMachine(n, t='normal') {
+        const id = `No_${n.toString().padStart(2,'0')}`;
+        const div = document.createElement('div');
+        div.className = (t==='big')?'machine big-machine':(t==='mega'?'machine mega-machine':'machine');
+        div.id = id; div.innerHTML = `<b>${n}</b><small id="name-${id}"></small>`;
+        div.onclick = () => openMachineModal(id);
+        db.collection(COLL_M).doc(id).onSnapshot(doc => { if(doc.exists) { const d = doc.data(); document.getElementById(`name-${id}`).innerText = d.owner || ""; div.classList.remove('paid', 'unpaid'); div.classList.add(d.status || 'unpaid'); updateOverviewStats(); }});
+        return div;
     }
-
-    async function deleteLog() {
-        if(!confirm("確定要徹底刪除此帳目嗎？國庫餘額會自動扣回。")) return;
-        const oldSnap = await db.collection(COLL_LOG).doc(editingLogId).get();
-        const d = oldSnap.data();
-        let finalBal = (d.type === 'income') ? currentBalance - d.amount : currentBalance + d.amount;
-        await db.collection(COLL_LOG).doc(editingLogId).delete();
-        await db.collection(COLL_T).doc('main').set({ amount: finalBal });
-        closeAllModals();
-    }
-
     function init() {
         layout.back.forEach(n => document.getElementById('area-back').appendChild(createMachine(n)));
         layout.left.forEach(n => document.getElementById('col-left').appendChild(createMachine(n)));
@@ -322,44 +243,13 @@
         layout.rightMega.forEach(n => document.getElementById('right-mega').appendChild(createMachine(n, 'mega')));
         layout.rightNormal.forEach(n => document.getElementById('right-normal').appendChild(createMachine(n)));
         document.getElementById('pos-17').appendChild(createMachine(17, 'big'));
-        
-        // 監聽流水帳
-        db.collection(COLL_LOG).orderBy('time','desc').limit(30).onSnapshot(snap => {
-            let h = ""; snap.forEach(doc => {
-                const d = doc.data(); const cls = d.type === 'income' ? 'income-text' : 'expense-text';
-                const typeLabel = d.type === 'income' ? '【收入】' : '【支出】';
-                const sign = d.type === 'income' ? '+' : '-';
-                h += `<div class="history-item">
-                    <div class="history-info">
-                        <span class="history-time">${formatTime(d.time)}</span>
-                        <b class="${cls}">${typeLabel}</b> ${d.title}
-                    </div>
-                    <span class="history-amt ${cls}">${sign}$${d.amount.toLocaleString()}</span>
-                    <button class="btn-edit-log" onclick="openEditLog('${doc.id}')">改</button>
-                </div>`;
-            });
+        db.collection(COLL_T).doc('main').onSnapshot(doc => { if(doc.exists) { currentBalance = doc.data().amount; document.getElementById('stat-balance').innerText = currentBalance.toLocaleString(); }});
+        db.collection(COLL_LOG).orderBy('time','desc').limit(20).onSnapshot(snap => {
+            let h = ""; snap.forEach(doc => { const d = doc.data(); h += `<div class="history-item"><div class="history-info"><b>${d.title}</b></div><span class="history-amt ${d.type==='income'?'income-text':'expense-text'}">${d.type==='income'?'+':'-'}$${d.amount.toLocaleString()}</span></div>`; });
             document.getElementById('mini-history').innerHTML = h; document.getElementById('full-history').innerHTML = h;
         });
-
-        // 監聽國庫餘額
-        db.collection(COLL_T).doc('main').onSnapshot(doc => {
-            if(doc.exists) { 
-                currentBalance = doc.data().amount; 
-                document.getElementById('stat-balance').innerText = currentBalance.toLocaleString(); 
-                document.getElementById('curr-bal').innerText = currentBalance.toLocaleString(); 
-            }
-        });
     }
-
-    function updateOverviewStats() {
-        db.collection(COLL_M).get().then(snap => {
-            let p = 0, u = 0; snap.forEach(doc => { doc.data().status === 'paid' ? p++ : u++; });
-            document.getElementById('stat-paid').innerText = p; document.getElementById('stat-unpaid').innerText = u;
-        });
-    }
-    function calcTotal() { const r = parseInt(document.getElementById('m-rent').value)||0, ac = parseInt(document.getElementById('m-acFee').value)||0, act = parseInt(document.getElementById('m-actFee').value)||0; document.getElementById('m-total').innerText = (r+ac+act).toLocaleString(); }
-    function closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); document.getElementById('overlay').style.display='none'; }
-
+    function updateOverviewStats() { db.collection(COLL_M).get().then(snap => { let p=0,u=0; snap.forEach(doc => { doc.data().status==='paid'?p++:u++; }); document.getElementById('stat-paid').innerText=p; document.getElementById('stat-unpaid').innerText=u; }); }
     init();
 </script>
 </body>
