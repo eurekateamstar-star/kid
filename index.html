@@ -282,17 +282,16 @@
         }
     }
 
-    // 重新計算本期租金：直接從 Firestore 撈，不依賴 allLogs
+    // 重新計算本期租金：用時間過濾，單一 where 避免索引問題
     let allLogs = [];
     async function recalcIncome() {
         const snap = await db.collection(COLL_LOG)
-            .where('type', '==', 'income')
             .where('time', '>=', firebase.firestore.Timestamp.fromDate(cycleStart))
             .get();
         let mSum = 0;
         snap.forEach(function(doc) {
             const d = doc.data();
-            if(d.title && d.title.includes('繳租')) mSum += d.amount;
+            if(d.type === 'income' && d.title && d.title.includes('繳租')) mSum += d.amount;
         });
         document.getElementById('stat-month-income').innerText = mSum.toLocaleString();
         updateCycleLabel();
