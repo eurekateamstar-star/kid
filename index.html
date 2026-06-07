@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>ClawOne Pro 財務管理</title>
+    <title>ClawOne Pro 財務自動化</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -17,53 +17,42 @@
             --unpaid: #F44336;
             --bg: #000;
             --card: #151515;
-            --box-w: 48px; 
-            --box-h: 48px;
-            --gap: 2px;
-            --big-w: 68px; 
-            --big-h: 98px; 
+            --box-w: 48px; --box-h: 48px; --gap: 2px;
+            --big-w: 68px; --big-h: 98px; 
         }
 
         body { 
             font-family: -apple-system, sans-serif; 
             background: var(--bg); color: white; margin: 0; padding: 0;
-            height: 100vh; overflow: hidden;
-            box-sizing: border-box;
+            height: 100vh; overflow: hidden; box-sizing: border-box;
         }
 
         .page { 
-            display: none; 
-            height: calc(100vh - 75px); 
-            padding: 10px 15px; 
-            box-sizing: border-box;
-            padding-top: calc(45px + env(safe-area-inset-top)); 
+            display: none; height: calc(100vh - 75px); padding: 10px 15px; box-sizing: border-box;
+            padding-top: calc(45px + env(safe-area-inset-top)); overflow-y: auto;
         }
         .page.active { display: block; }
 
+        /* 導覽列 */
         .nav-bar {
-            position: fixed; bottom: 0; width: 100%; height: 75px;
-            background: #0a0a0a; display: flex; justify-content: space-around;
-            align-items: center; border-top: 1px solid #222; 
-            padding-bottom: env(safe-area-inset-bottom);
-            z-index: 1000;
+            position: fixed; bottom: 0; width: 100%; height: 75px; background: #0a0a0a; 
+            display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #222; 
+            padding-bottom: env(safe-area-inset-bottom); z-index: 1000;
         }
         .nav-item { color: #666; font-size: 0.7rem; text-align: center; flex: 1; }
         .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 2px; }
+        .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 3px; }
 
+        /* 卡片與元件 */
         .stat-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .history-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-size: 0.85rem; }
+        .income { color: var(--paid); }
+        .expense { color: var(--unpaid); }
 
+        /* 平面圖佈局 */
         .map-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .back-wall-row { display: flex; gap: 10px; justify-content: center; width: 100%; margin-bottom: 5px; }
-        
-        .floor-plan { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-end; 
-            width: 100%; 
-            min-height: 500px; 
-        }
-        
+        .floor-plan { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; min-height: 500px; }
         .column { display: flex; flex-direction: column; gap: var(--gap); align-items: center; }
         .island-group { display: flex; gap: 0; align-items: flex-end; }
 
@@ -71,64 +60,60 @@
             width: var(--box-w); height: var(--box-h); background: #1a1a1a;
             border: 1px solid #333; border-top: 3px solid #555; border-radius: 3px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-sizing: border-box;
-            overflow: hidden;
+            box-sizing: border-box; overflow: hidden;
         }
-        
-        .big-machine { width: var(--big-w); height: var(--big-h); border: 1.2px solid gold; border-top: 6px solid #555; margin-right: 15px; z-index: 5; }
+        .big-machine { width: var(--big-w); height: var(--big-h); border: 1.2px solid gold; border-top: 6px solid #555; margin-right: 15px; }
         .mega-machine { width: 68px; height: 68px; border: 2px solid var(--primary); border-top: 6px solid #555; }
-        
         .paid { border-top-color: var(--paid) !important; }
         .unpaid { border-top-color: var(--unpaid) !important; }
-        
-        .machine b { font-size: 0.9rem; color: #fff; line-height: 1.2; }
-        .machine small { font-size: 0.6rem; color: #aaa; white-space: nowrap; overflow: hidden; width: 95%; text-align: center; margin-top: 2px; }
+        .machine b { font-size: 0.85rem; color: #fff; }
+        .machine small { font-size: 0.55rem; color: #aaa; white-space: nowrap; overflow: hidden; width: 95%; text-align: center; margin-top: 1px; }
 
-        /* 彈窗內容優化 */
-        #modal { 
-            display: none; position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); 
-            background: #1a1a1a; padding: 20px; border-radius: 15px; z-index: 2000; width: 85%; 
-            border: 1px solid #333; max-height: 80vh; overflow-y: auto;
-        }
+        /* 彈窗 */
+        #modal { display: none; position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 20px; border-radius: 15px; z-index: 2000; width: 85%; border: 1px solid #333; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1500; }
         
         .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .form-group { flex: 1; }
         label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
-        input, select { width: 100%; padding: 10px; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
+        input, select { width: 100%; padding: 10px; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         .btn-action { width: 100%; padding: 15px; background: var(--primary); color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; margin-top: 10px; }
-        .total-box { background: #333; padding: 10px; border-radius: 8px; text-align: right; margin-top: 10px; color: var(--primary); font-weight: bold; }
+        .total-box { background: #333; padding: 10px; border-radius: 8px; text-align: right; color: var(--primary); font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <!-- 總覽頁 -->
+    <!-- 頁面 1：總覽 -->
     <div id="page-overview" class="page active">
         <h2 style="color: var(--primary); margin: 0 0 10px 0;">📊 場地總覽</h2>
         <div class="stat-card">
-            <div style="color: #888; font-size: 0.8rem;">本月收租進度 (36台)</div>
+            <div style="color: #888; font-size: 0.8rem;">本月繳費統計 (36台)</div>
             <div style="display: flex; gap: 30px; margin-top: 5px;">
                 <div><span style="color: var(--paid); font-size: 1.8rem;" id="stat-paid">0</span> <small>已繳</small></div>
                 <div><span style="color: var(--unpaid); font-size: 1.8rem;" id="stat-unpaid">0</span> <small>未繳</small></div>
             </div>
         </div>
         <div class="stat-card" style="border-left-color: gold;">
-            <div style="color: #888; font-size: 0.8rem;">國庫目前餘額</div>
+            <div style="color: #888; font-size: 0.8rem;">國庫餘額</div>
             <div style="font-size: 2rem; font-weight: bold; color: gold; margin-top: 5px;">$ <span id="stat-balance">0</span></div>
         </div>
+        <h3 style="font-size: 0.9rem; color: #666; margin-top: 20px;">近期帳目明細</h3>
+        <div id="mini-history"></div>
     </div>
 
-    <!-- 支出頁 -->
+    <!-- 頁面 2：支出管理 -->
     <div id="page-expenses" class="page">
-        <h2 style="color: var(--primary); margin: 0 0 10px 0;">💸 支出管理</h2>
+        <h2 style="color: var(--primary); margin: 0 0 10px 0;">💸 支出登記</h2>
         <div class="stat-card">
-            <input type="text" id="exp-title" placeholder="支出項目">
-            <input type="number" id="exp-amount" placeholder="支出金額">
-            <button class="btn-action" onclick="addExpense()">確認新增</button>
+            <label>項目名稱</label>
+            <input type="text" id="exp-title" placeholder="如：台電、店租、維修">
+            <label>金額</label>
+            <input type="number" id="exp-amount" placeholder="輸入金額">
+            <button class="btn-action" onclick="addExpense()">確認支出並扣款</button>
         </div>
     </div>
 
-    <!-- 台主平面圖 -->
+    <!-- 頁面 3：台主資料 -->
     <div id="page-machines" class="page">
         <div class="map-wrapper">
             <div class="back-wall-row" id="area-back"></div>
@@ -150,16 +135,18 @@
         <div style="text-align: center; color: #333; font-size: 0.7rem; margin-top: 8px; letter-spacing: 5px;">▲ 入口處 ▲</div>
     </div>
 
-    <!-- 國庫頁 -->
+    <!-- 頁面 4：國庫歷史 -->
     <div id="page-treasury" class="page">
-        <h2 style="color: var(--primary); margin: 0 0 10px 0;">🏦 國庫帳戶</h2>
-        <div class="stat-card">
-            <input type="number" id="manual-balance" placeholder="手動同步餘額">
-            <button class="btn-action" onclick="updateTreasury()">更新金額</button>
+        <h2 style="color: var(--primary); margin: 0 0 10px 0;">🏦 國庫流水帳</h2>
+        <div class="stat-card" style="border-left-color: gold;">
+            <label>手動校正國庫金額</label>
+            <input type="number" id="manual-balance" placeholder="輸入金額">
+            <button class="btn-action" onclick="updateTreasury()">同步國庫</button>
         </div>
+        <div id="full-history"></div>
     </div>
 
-    <!-- 導覽列 -->
+    <!-- 底部導覽 -->
     <div class="nav-bar">
         <div class="nav-item active" onclick="switchPage('overview', this)"><span>📊</span>總覽</div>
         <div class="nav-item" onclick="switchPage('expenses', this)"><span>💸</span>支出</div>
@@ -167,37 +154,30 @@
         <div class="nav-item" onclick="switchPage('treasury', this)"><span>🏦</span>國庫</div>
     </div>
 
-    <!-- 編輯彈窗 -->
+    <!-- 設定彈窗 -->
     <div class="overlay" id="overlay" onclick="closeModal()"></div>
     <div id="modal">
-        <h3 id="m-title" style="margin:0 0 10px 0; color: var(--primary);">台主設定</h3>
-        
+        <h3 id="m-title" style="margin:0 0 10px 0; color: var(--primary);">租金管理</h3>
         <div class="form-row">
             <div class="form-group"><label>編號</label><input type="text" id="m-displayNum"></div>
             <div class="form-group"><label>台主姓名</label><input type="text" id="m-owner"></div>
         </div>
-
-        <label>場租金額</label>
-        <input type="number" id="m-rent" oninput="calcTotal()">
-
         <div class="form-row">
-            <div class="form-group"><label>冷氣費</label><input type="number" id="m-acFee" oninput="calcTotal()"></div>
-            <div class="form-group"><label>活動費</label><input type="number" id="m-actFee" oninput="calcTotal()"></div>
+            <div class="form-group"><label>場租</label><input type="number" id="m-rent" oninput="calcTotal()"></div>
+            <div class="form-group"><label>冷氣</label><input type="number" id="m-acFee" oninput="calcTotal()"></div>
+            <div class="form-group"><label>活動</label><input type="number" id="m-actFee" oninput="calcTotal()"></div>
         </div>
-
-        <div class="total-box">應收總計：$ <span id="m-total">0</span></div>
-
-        <label style="margin-top:10px;">租金繳納狀態</label>
+        <div class="total-box">應收總額：$ <span id="m-total">0</span></div>
+        <label style="margin-top:10px;">切齊繳費狀態</label>
         <select id="m-status">
-            <option value="unpaid" style="color: var(--unpaid);">❌ 未繳費</option>
-            <option value="paid" style="color: var(--paid);">✅ 已繳費</option>
+            <option value="unpaid">❌ 未繳費</option>
+            <option value="paid">✅ 已繳費 (自動入庫)</option>
         </select>
-        
         <button class="btn-action" onclick="saveMachine()">確認存檔</button>
     </div>
 
 <script>
-    // Firebase Config (根據您的專案)
+    // --- Firebase 設定 ---
     const firebaseConfig = {
         apiKey: "AIzaSyD9oJirgoJCTU7h-ODfSpfwC80E5fqze2A",
         authDomain: "clawone-6445c.firebaseapp.com",
@@ -211,6 +191,10 @@
     const db = firebase.firestore();
     const COLL_M = "claw_machines";
     const COLL_T = "claw_treasury";
+    const COLL_LOG = "claw_transactions";
+
+    // 預設費用
+    const DEF = { rent: 3000, ac: 300, act: 300 };
 
     const layout = {
         back: [33, 34, 35], left: [1,2,3,4,5,6,7,8,9,10],
@@ -219,6 +203,8 @@
     };
 
     let currentId = null;
+    let oldStatus = "unpaid"; // 追蹤修改前的狀態
+    let currentBalance = 0;
 
     function switchPage(pageId, el) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -242,7 +228,7 @@
                 document.getElementById(`name-${docId}`).innerText = d.owner || "";
                 div.classList.remove('paid', 'unpaid');
                 div.classList.add(d.status || 'unpaid');
-                updateStats();
+                updateOverviewStats();
             }
         });
         return div;
@@ -256,6 +242,7 @@
         layout.rightMega.forEach(n => document.getElementById('right-mega').appendChild(createMachine(n, 'mega')));
         layout.rightNormal.forEach(n => document.getElementById('right-normal').appendChild(createMachine(n)));
         document.getElementById('pos-17').appendChild(createMachine(17, 'big'));
+        loadHistory();
     }
 
     function openModal(id, originalNum) {
@@ -268,17 +255,19 @@
                 const d = doc.data();
                 document.getElementById('m-displayNum').value = d.displayNum || originalNum;
                 document.getElementById('m-owner').value = d.owner || "";
-                document.getElementById('m-rent').value = d.rent || 0;
-                document.getElementById('m-acFee').value = d.acFee || 0;
-                document.getElementById('m-actFee').value = d.actFee || 0;
+                document.getElementById('m-rent').value = d.rent !== undefined ? d.rent : DEF.rent;
+                document.getElementById('m-acFee').value = d.acFee !== undefined ? d.acFee : DEF.ac;
+                document.getElementById('m-actFee').value = d.actFee !== undefined ? d.actFee : DEF.act;
                 document.getElementById('m-status').value = d.status || "unpaid";
+                oldStatus = d.status || "unpaid";
             } else {
                 document.getElementById('m-displayNum').value = originalNum;
                 document.getElementById('m-owner').value = "";
-                document.getElementById('m-rent').value = 0;
-                document.getElementById('m-acFee').value = 0;
-                document.getElementById('m-actFee').value = 0;
+                document.getElementById('m-rent').value = DEF.rent;
+                document.getElementById('m-acFee').value = DEF.ac;
+                document.getElementById('m-actFee').value = DEF.act;
                 document.getElementById('m-status').value = "unpaid";
+                oldStatus = "unpaid";
             }
             calcTotal();
         });
@@ -291,23 +280,71 @@
         document.getElementById('m-total').innerText = (r + ac + act).toLocaleString();
     }
 
-    function closeModal() {
-        document.getElementById('overlay').style.display = 'none';
-        document.getElementById('modal').style.display = 'none';
-    }
-
     function saveMachine() {
+        const newStatus = document.getElementById('m-status').value;
+        const owner = document.getElementById('m-owner').value;
+        const rent = parseInt(document.getElementById('m-rent').value) || 0;
+        const ac = parseInt(document.getElementById('m-acFee').value) || 0;
+        const act = parseInt(document.getElementById('m-actFee').value) || 0;
+        const total = rent + ac + act;
+
+        // 如果從未繳變已繳，自動寫入流水帳
+        if (oldStatus === "unpaid" && newStatus === "paid") {
+            const logMsg = `${currentId} - ${owner} 繳費`;
+            recordTransaction('income', logMsg, total);
+        }
+
         db.collection(COLL_M).doc(currentId).set({
             displayNum: document.getElementById('m-displayNum').value,
-            owner: document.getElementById('m-owner').value,
-            rent: parseInt(document.getElementById('m-rent').value) || 0,
-            acFee: parseInt(document.getElementById('m-acFee').value) || 0,
-            actFee: parseInt(document.getElementById('m-actFee').value) || 0,
-            status: document.getElementById('m-status').value
+            owner: owner,
+            rent: rent, acFee: ac, actFee: act,
+            status: newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => closeModal());
     }
 
-    function updateStats() {
+    function recordTransaction(type, title, amount) {
+        db.collection(COLL_LOG).add({
+            type: type,
+            title: title,
+            amount: amount,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // 更新國庫總額
+        const newBal = (type === 'income') ? currentBalance + amount : currentBalance - amount;
+        db.collection(COLL_T).doc('main').set({ amount: newBal });
+    }
+
+    function addExpense() {
+        const title = document.getElementById('exp-title').value;
+        const amount = parseInt(document.getElementById('exp-amount').value);
+        if (!title || !amount) return alert("請填寫項目與金額");
+        recordTransaction('expense', title, amount);
+        document.getElementById('exp-title').value = "";
+        document.getElementById('exp-amount').value = "";
+        alert("支出已扣款");
+    }
+
+    function loadHistory() {
+        db.collection(COLL_LOG).orderBy('time', 'desc').limit(20).onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const time = d.time ? d.time.toDate().toLocaleDateString() : "";
+                const sign = d.type === 'income' ? '+' : '-';
+                const cls = d.type === 'income' ? 'income' : 'expense';
+                html += `<div class="history-item">
+                    <span>${time} ${d.title}</span>
+                    <span class="${cls}">${sign}$${d.amount.toLocaleString()}</span>
+                </div>`;
+            });
+            document.getElementById('mini-history').innerHTML = html;
+            document.getElementById('full-history').innerHTML = html;
+        });
+    }
+
+    function updateOverviewStats() {
         db.collection(COLL_M).get().then(snap => {
             let p = 0, u = 0;
             snap.forEach(doc => { doc.data().status === 'paid' ? p++ : u++; });
@@ -317,13 +354,18 @@
     }
 
     function updateTreasury() {
-        const val = document.getElementById('manual-balance').value;
-        db.collection(COLL_T).doc('main').set({ amount: parseInt(val) || 0 });
+        const val = parseInt(document.getElementById('manual-balance').value) || 0;
+        db.collection(COLL_T).doc('main').set({ amount: val });
     }
 
     db.collection(COLL_T).doc('main').onSnapshot(doc => {
-        if(doc.exists) document.getElementById('stat-balance').innerText = doc.data().amount.toLocaleString();
+        if(doc.exists) {
+            currentBalance = doc.data().amount;
+            document.getElementById('stat-balance').innerText = currentBalance.toLocaleString();
+        }
     });
+
+    function closeModal() { document.getElementById('overlay').style.display = 'none'; document.getElementById('modal').style.display = 'none'; }
 
     init();
 </script>
