@@ -324,7 +324,7 @@
     function addTransaction(type) {
         const amt = parseInt(document.getElementById('t-amount').value), d = document.getElementById('t-desc').value, dt = document.getElementById('t-date').value;
         if(!amt || !d) return;
-        recordTransaction(type, d, amt, dt);
+        recordTransaction(type, d, amt, dt).then(() => loadTreasuryPage(true));
         document.getElementById('t-amount').value = ""; document.getElementById('t-desc').value = "";
     }
 
@@ -332,6 +332,59 @@
         let h = ""; debtList.forEach(d => { h += `<div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #222;"><b>${d.num}號</b><span>${d.name}</span></div>`; });
         document.getElementById('debt-list-container').innerHTML = h || "目前無欠租。";
         document.getElementById('overlay').style.display = 'block'; document.getElementById('modal-debt').style.display = 'block';
+    }
+
+    // 國庫分頁狀態
+    let lastTreasuryDoc = null;
+    let isTreasuryLoading = false;
+    const PAGE_SIZE = 30;
+
+    async function loadTreasuryPage(reset) {
+        if (isTreasuryLoading) return;
+        isTreasuryLoading = true;
+
+        if (reset) {
+            lastTreasuryDoc = null;
+            document.getElementById('full-history').innerHTML = '';
+        }
+
+        let query = db.collection(COLL_LOG).orderBy('time', 'desc').limit(PAGE_SIZE);
+        if (lastTreasuryDoc) query = query.startAfter(lastTreasuryDoc);
+
+        const snap = await query.get();
+        let h = "";
+        snap.forEach(function(doc) {
+            const d = doc.data();
+            logCache[doc.id] = d;
+            const cls = d.type==='income'?'text-income':'text-expense';
+            h += '<div class="history-item" onclick="openEditLog(\'' + doc.id + '\', \'treasury\')">'
+                + '<div class="item-info"><span class="item-time">' + formatTime(d.time) + '</span>'
+                + '<b class="' + cls + '">【' + (d.type==='income'?'收入':'支出') + '】</b>' + d.title + '</div>'
+                + '<span class="' + cls + '">' + (d.type==='income'?'+':'-') + '$' + d.amount.toLocaleString() + '</span></div>';
+            lastTreasuryDoc = doc;
+        });
+
+        const container = document.getElementById('full-history');
+        const oldBtn = document.getElementById('load-more-btn');
+        if (oldBtn) oldBtn.remove();
+        const oldEnd = document.getElementById('history-end');
+        if (oldEnd) oldEnd.remove();
+
+        container.insertAdjacentHTML('beforeend', h);
+
+        if (snap.size === PAGE_SIZE) {
+            const btn = document.createElement('button');
+            btn.id = 'load-more-btn';
+            btn.className = 'btn';
+            btn.style.cssText = 'background:#1a1a1a; color:#aaa; border:1px solid #333; font-size:0.85rem; margin:15px 0;';
+            btn.innerText = '▼ 載入更多紀錄';
+            btn.onclick = function() { loadTreasuryPage(false); };
+            container.appendChild(btn);
+        } else {
+            container.insertAdjacentHTML('beforeend', '<div id="history-end" style="text-align:center; color:#444; font-size:0.75rem; padding:20px 0;">— 已顯示全部紀錄 —</div>');
+        }
+
+        isTreasuryLoading = false;
     }
 
     function init() {
@@ -367,11 +420,12 @@
             recalcIncome();
         });
 
-        db.collection(COLL_LOG).orderBy('time', 'desc').limit(30).onSnapshot(snap => {
+        // 總覽迷你歷史：最新10筆即時監聽
+        db.collection(COLL_LOG).orderBy('time', 'desc').limit(10).onSnapshot(snap => {
             allLogs = [];
             let h = "";
             snap.forEach(doc => {
-                const d = doc.data(); 
+                const d = doc.data();
                 logCache[doc.id] = d;
                 allLogs.push(d);
                 const cls = d.type==='income'?'text-income':'text-expense';
@@ -381,8 +435,10 @@
             });
             recalcIncome();
             document.getElementById('mini-history').innerHTML = h;
-            document.getElementById('full-history').innerHTML = h;
         });
+
+        // 國庫分頁載入
+        loadTreasuryPage(true);
 
         db.collection(COLL_SH).orderBy('time','desc').onSnapshot(snap => {
             let h = "", totals = {"柏昇":0, "士傑":0, "洋佑":0};
@@ -419,6 +475,7 @@
                 let diff = (d.type === 'income') ? nA - d.amount : d.amount - nA; 
                 await db.collection(COLL_LOG).doc(id).update({ title: nD, amount: nA, time: nTime }); 
                 await db.collection(COLL_T).doc('main').set({ amount: currentBalance + diff }); 
+                loadTreasuryPage(true);
             } else { 
                 await db.collection(COLL_SH).doc(id).update({ title: nD, amount: nA, time: nTime }); 
             } 
@@ -431,6 +488,7 @@
                 let diff = (d.type === 'income') ? -d.amount : d.amount; 
                 await db.collection(COLL_LOG).doc(id).delete(); 
                 await db.collection(COLL_T).doc('main').set({ amount: currentBalance + diff }); 
+                loadTreasuryPage(true);
             } else { 
                 await db.collection(COLL_SH).doc(id).delete(); 
             } 
