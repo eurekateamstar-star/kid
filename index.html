@@ -25,18 +25,15 @@
         }
         .page.active { display: block; }
 
-        /* 導覽列 */
         .nav-bar { position: fixed; bottom: 0; width: 100%; height: 75px; background: #0a0a0a; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #222; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
         .nav-item { color: #666; font-size: 0.7rem; text-align: center; flex: 1; cursor: pointer; }
         .nav-item.active { color: var(--primary); font-weight: bold; }
         .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 3px; }
 
-        /* 通用卡片 */
         .stat-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 4px solid var(--primary); position: relative; }
         .dash-label { color: #888; font-size: 0.75rem; margin-bottom: 5px; }
         .dash-val { font-size: 1.6rem; font-weight: bold; }
         
-        /* 欠租查看按鈕 */
         .debt-btn { 
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%); 
             background: #222; padding: 8px 12px; border-radius: 20px; font-size: 0.75rem; 
@@ -44,13 +41,11 @@
             z-index: 10; cursor: pointer;
         }
 
-        /* 歷史明細 */
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #222; font-size: 0.85rem; cursor: pointer; }
-        .item-info { flex: 1; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #222; font-size: 0.85rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .item-info { flex: 1; pointer-events: none; }
         .item-time { font-size: 0.65rem; color: #666; display: block; }
         .text-income { color: var(--income); } .text-expense { color: var(--expense); }
 
-        /* 平面圖佈局 */
         .map-wrapper { display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .back-wall-row { display: flex; gap: 10px; justify-content: center; width: 100%; margin-bottom: 5px; }
         .floor-plan { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; min-height: 480px; }
@@ -67,7 +62,6 @@
         .machine b { font-size: 0.85rem; color: #fff; }
         .machine small { font-size: 0.5rem; color: #aaa; text-align: center; width: 95%; white-space: nowrap; overflow: hidden; }
 
-        /* 輸入與按鈕 */
         label { display: block; font-size: 0.75rem; color: #666; margin-top: 10px; }
         input, select { width: 100%; padding: 12px; margin: 5px 0; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; }
@@ -75,7 +69,6 @@
         .btn-expense { background: var(--expense); color: #fff; }
         .btn-primary { background: var(--primary); color: #000; }
 
-        /* 彈窗樣式 */
         .modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background: #1a1a1a; padding: 25px; border-radius: 15px; z-index: 3000; 
@@ -91,20 +84,16 @@
 </head>
 <body>
 
-    <!-- 總覽 -->
     <div id="page-overview" class="page active">
         <h2 style="color: var(--primary); margin:0 0 15px 0;">📊 場地經營總覽</h2>
-        
         <div class="stat-card" style="border-left-color: var(--income);">
             <div class="dash-label">本月租金實收總額</div>
             <div class="dash-val text-income">$ <span id="stat-month-income">0</span></div>
         </div>
-
         <div class="stat-card" style="border-left-color: gold;">
             <div class="dash-label">國庫當前餘額</div>
             <div class="dash-val" style="color: gold;">$ <span class="balance-val">0</span></div>
         </div>
-
         <div class="stat-card" style="border-left-color: var(--expense);">
             <div class="dash-label">經營狀況 (經營中 / 欠租)</div>
             <div class="dash-val">
@@ -112,12 +101,10 @@
             </div>
             <div class="debt-btn" onclick="openDebtModal()">查看清單</div>
         </div>
-
         <button class="btn" style="background: transparent; color: #555; border: 1px solid #333; font-size: 0.8rem; margin-top: 15px;" onclick="resetAllStatus()">🗓️ 一鍵換下個月 (重設未繳)</button>
         <div id="mini-history" style="margin-top: 15px;"></div>
     </div>
 
-    <!-- 支出 (股東墊付) -->
     <div id="page-expenses" class="page">
         <h2 style="color: var(--expense); margin: 0 0 15px 0;">🤝 股東墊付登記</h2>
         <div class="stat-card" style="border-left-color: var(--expense);">
@@ -135,7 +122,6 @@
         <div id="sh-logs"></div>
     </div>
 
-    <!-- 台主平面圖 -->
     <div id="page-machines" class="page">
         <div class="map-wrapper">
             <div id="area-back" class="back-wall-row"></div>
@@ -153,7 +139,6 @@
         </div>
     </div>
 
-    <!-- 國庫流水帳 -->
     <div id="page-treasury" class="page">
         <h2 style="color: var(--primary); margin: 0 0 15px 0;">🏦 國庫流水帳</h2>
         <div class="stat-card" style="border-left-color: gold;">
@@ -173,7 +158,6 @@
         <div id="full-history"></div>
     </div>
 
-    <!-- 底部導覽 -->
     <div class="nav-bar">
         <div class="nav-item active" onclick="switchPage('overview', this)"><span>📊</span>總覽</div>
         <div class="nav-item" onclick="switchPage('expenses', this)"><span>🤝</span>支出</div>
@@ -182,6 +166,20 @@
     </div>
 
     <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+
+    <!-- 編輯明細彈窗 -->
+    <div id="modal-edit-log" class="modal">
+        <h3 id="edit-title" style="margin:0; color: var(--primary);">編輯明細紀錄</h3>
+        <label>日期與時間</label>
+        <input type="datetime-local" id="edit-date">
+        <label>說明</label>
+        <input type="text" id="edit-desc">
+        <label>金額</label>
+        <input type="number" id="edit-amount">
+        <button id="btn-save-edit" class="btn btn-primary" style="margin-top:20px;">確認更新</button>
+        <button id="btn-delete-edit" class="btn btn-expense" style="background:transparent; border:1px solid var(--expense); color:var(--expense); margin-top:10px;">刪除此筆紀錄</button>
+        <button class="btn" style="background:#222; color:#888; font-size:0.9rem;" onclick="closeAllModals()">取消返回</button>
+    </div>
 
     <!-- 機台彈窗 -->
     <div id="modal-machine" class="modal">
@@ -208,16 +206,6 @@
         <button class="btn btn-primary" style="background:#333; color:white; margin-top:20px;" onclick="closeAllModals()">關閉視窗</button>
     </div>
 
-    <!-- 帳目編輯彈窗 -->
-    <div id="modal-edit-log" class="modal">
-        <h3 id="edit-title" style="margin:0;">編輯帳目紀錄</h3>
-        <label>日期</label><input type="date" id="edit-date">
-        <label>說明</label><input type="text" id="edit-desc">
-        <label>金額</label><input type="number" id="edit-amount">
-        <button id="btn-save-edit" class="btn btn-primary">確認更新</button>
-        <button id="btn-delete-edit" class="btn btn-expense" style="margin-top:10px;">刪除此筆紀錄</button>
-    </div>
-
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyD9oJirgoJCTU7h-ODfSpfwC80E5fqze2A",
@@ -239,17 +227,22 @@
 
     let currentId = null, currentBalance = 0, oldStatus = "unpaid", selectedStatus = "unpaid", debtList = [];
     let editingId = null, editTarget = "";
+    let logCache = {}; // 暫存資料防止 click 失效
 
     function switchPage(p, el) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('page-'+p).classList.add('active'); el.classList.add('active'); }
     function setStatus(s) { selectedStatus = s; document.getElementById('btn-unpaid').className = 'status-btn' + (s==='unpaid'?' active-unpaid':''); document.getElementById('btn-paid').className = 'status-btn' + (s==='paid'?' active-paid':''); }
     
-    // 初始化日期
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('t-date').value = today;
     document.getElementById('sh-date').value = today;
 
     function formatTime(ts) { if(!ts) return ""; const d=ts.toDate(); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`; }
-    function formatInputDate(ts) { if(!ts) return today; const d=ts.toDate(); return d.toISOString().split('T')[0]; }
+    function toLocalISO(ts) {
+        if (!ts) return "";
+        const d = ts.toDate();
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
 
     async function resetAllStatus() {
         if(!confirm("確定全場重設為未繳？")) return;
@@ -314,9 +307,10 @@
             let mSum = 0, h = "";
             snap.forEach(doc => {
                 const d = doc.data(); 
+                logCache[doc.id] = d; 
                 if(d.time && d.time.toDate() >= startOfMonth && d.type === 'income' && d.title.includes('繳租')) mSum += d.amount;
                 const cls = d.type==='income'?'text-income':'text-expense';
-                h += `<div class="history-item" onclick='openEditLog("${doc.id}", ${JSON.stringify(d)}, "treasury")'>
+                h += `<div class="history-item" onclick="openEditLog('${doc.id}', 'treasury')">
                     <div class="item-info"><span class="item-time">${formatTime(d.time)}</span><b class="${cls}">【${d.type==='income'?'收入':'支出'}】</b>${d.title}</div>
                     <span class="${cls}">${d.type==='income'?'+':'-'}$${d.amount.toLocaleString()}</span></div>`;
             });
@@ -326,7 +320,12 @@
 
         db.collection(COLL_SH).orderBy('time','desc').onSnapshot(snap => {
             let h = "", totals = {"柏昇":0, "士傑":0, "洋佑":0};
-            snap.forEach(doc => { const d = doc.data(); totals[d.payer] += d.amount; h += `<div class="history-item" onclick='openEditLog("${doc.id}", ${JSON.stringify(d)}, "sh")'><div><span class="item-time">${formatTime(d.time)}</span><b>${d.payer}</b>：${d.title}</div> <span class="text-income">$${d.amount.toLocaleString()}</span></div>`; });
+            snap.forEach(doc => { 
+                const d = doc.data(); 
+                logCache[doc.id] = d;
+                totals[d.payer] += d.amount; 
+                h += `<div class="history-item" onclick="openEditLog('${doc.id}', 'sh')"><div><span class="item-time">${formatTime(d.time)}</span><b>${d.payer}</b>：${d.title}</div> <span class="text-income">$${d.amount.toLocaleString()}</span></div>`; 
+            });
             document.getElementById('sh-logs').innerHTML = h;
             const sum = totals["柏昇"] + totals["士傑"] + totals["洋佑"], avg = sum/3;
             let sHtml = `總墊付：$${sum.toLocaleString()} (平均：$${Math.round(avg).toLocaleString()})<br>`;
@@ -335,31 +334,40 @@
         });
     }
 
-    function openEditLog(id, d, target) {
+    function openEditLog(id, target) {
+        const d = logCache[id];
+        if(!d) return;
         editingId = id; editTarget = target; 
+        document.getElementById('edit-title').innerText = target === 'sh' ? "編輯股東墊付" : "編輯國庫流水帳";
         document.getElementById('edit-desc').value = d.title; 
         document.getElementById('edit-amount').value = d.amount;
-        document.getElementById('edit-date').value = formatInputDate(d.time);
+        document.getElementById('edit-date').value = toLocalISO(d.time);
         document.getElementById('overlay').style.display = 'block'; 
         document.getElementById('modal-edit-log').style.display = 'block';
         
         document.getElementById('btn-save-edit').onclick = async () => {
             const nA = parseInt(document.getElementById('edit-amount').value), nD = document.getElementById('edit-desc').value, nDt = document.getElementById('edit-date').value;
-            const nTime = firebase.firestore.Timestamp.fromDate(new Date(nDt + " 12:00:00"));
+            if(!nA || !nD || !nDt) return alert("請填寫完整資訊");
+            const nTime = firebase.firestore.Timestamp.fromDate(new Date(nDt));
             if(target === 'treasury') { 
                 let diff = (d.type === 'income') ? nA - d.amount : d.amount - nA; 
                 await db.collection(COLL_LOG).doc(id).update({ title: nD, amount: nA, time: nTime }); 
                 await db.collection(COLL_T).doc('main').set({ amount: currentBalance + diff }); 
-            } else { await db.collection(COLL_SH).doc(id).update({ title: nD, amount: nA, time: nTime }); } 
+            } else { 
+                await db.collection(COLL_SH).doc(id).update({ title: nD, amount: nA, time: nTime }); 
+            } 
             closeAllModals();
         };
+
         document.getElementById('btn-delete-edit').onclick = async () => { 
-            if(!confirm("刪除此紀錄？")) return; 
+            if(!confirm("確定要刪除這筆紀錄嗎？")) return; 
             if(target === 'treasury') { 
                 let diff = (d.type === 'income') ? -d.amount : d.amount; 
                 await db.collection(COLL_LOG).doc(id).delete(); 
                 await db.collection(COLL_T).doc('main').set({ amount: currentBalance + diff }); 
-            } else { await db.collection(COLL_SH).doc(id).delete(); } 
+            } else { 
+                await db.collection(COLL_SH).doc(id).delete(); 
+            } 
             closeAllModals(); 
         };
     }
