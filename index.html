@@ -17,30 +17,29 @@
             --unpaid: #F44336;
             --bg: #000;
             --card: #151515;
-            /* 精確比例 */
+            /* 微調尺寸以達成一頁看全 */
             --box-w: 48px; 
-            --box-h: 50px;
+            --box-h: 48px;
             --gap: 2px;
             --big-w: 68px; 
-            --big-h: 102px; /* 使 18 與 36 頂端對齊 */
+            --big-h: 98px; /* 48+48+2=98 確保18與36對齊 */
         }
 
         body { 
             font-family: -apple-system, sans-serif; 
             background: var(--bg); color: white; margin: 0; padding: 0;
-            height: 100vh; overflow: hidden;
+            height: 100vh; overflow: hidden; /* 強制不捲動 */
             box-sizing: border-box;
         }
 
-        /* 頁面容器：增加頂部 Padding 避開瀏海 */
+        /* 導覽頁面：優化頂部距離 */
         .page { 
             display: none; 
             height: calc(100vh - 75px); 
-            overflow-y: auto; 
-            padding: 15px; 
+            padding: 10px 15px; 
             box-sizing: border-box;
-            /* 關鍵：增加頂部空間，避開手機瀏海與狀態列 */
-            padding-top: calc(70px + env(safe-area-inset-top)); 
+            /* 避開瀏海但盡量往上 */
+            padding-top: calc(45px + env(safe-area-inset-top)); 
         }
         .page.active { display: block; }
 
@@ -54,32 +53,26 @@
         }
         .nav-item { color: #666; font-size: 0.7rem; text-align: center; flex: 1; }
         .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 3px; }
+        .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 2px; }
 
         /* 統計卡片 */
-        .stat-card { background: var(--card); padding: 18px; border-radius: 12px; margin-bottom: 12px; border-left: 4px solid var(--primary); }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
 
         /* --- 平面配置圖 --- */
-        .map-wrapper { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        .back-wall-row { display: flex; gap: 10px; justify-content: center; width: 100%; margin-bottom: 10px; }
+        .map-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .back-wall-row { display: flex; gap: 10px; justify-content: center; width: 100%; margin-bottom: 5px; }
         
         .floor-plan { 
             display: flex; 
             justify-content: space-between; 
-            align-items: flex-end; /* 底部對齊入口 */
+            align-items: flex-end; 
             width: 100%; 
-            min-height: 520px; 
+            min-height: 500px; 
         }
         
         .column { display: flex; flex-direction: column; gap: var(--gap); align-items: center; }
         
-        /* 島櫃貼合 */
-        .island-group { 
-            display: flex; 
-            gap: 0; 
-            background: transparent; 
-            align-items: flex-end; 
-        }
+        .island-group { display: flex; gap: 0; align-items: flex-end; }
 
         /* 機器樣式 */
         .machine {
@@ -97,10 +90,10 @@
         
         .mega-machine { width: 68px; height: 68px; border: 2px solid var(--primary); border-top: 6px solid #555; }
         
-        .paid { border-top-color: var(--paid) !important; box-shadow: inset 0 2px 0 var(--paid); }
-        .unpaid { border-top-color: var(--unpaid) !important; box-shadow: inset 0 2px 0 var(--unpaid); }
-        .machine b { font-size: 0.9rem; }
-        .machine small { font-size: 0.55rem; color: #888; white-space: nowrap; overflow: hidden; width: 90%; text-align: center; }
+        .paid { border-top-color: var(--paid) !important; }
+        .unpaid { border-top-color: var(--unpaid) !important; }
+        .machine b { font-size: 0.85rem; }
+        .machine small { font-size: 0.5rem; color: #888; white-space: nowrap; overflow: hidden; width: 90%; text-align: center; }
 
         /* 彈窗 */
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 25px; border-radius: 15px; z-index: 2000; width: 85%; border: 1px solid #333; }
@@ -113,42 +106,41 @@
 
     <!-- 總覽 -->
     <div id="page-overview" class="page active">
-        <h2 style="color: var(--primary); margin-top: 0;">📊 場地總覽</h2>
+        <h2 style="color: var(--primary); margin: 0 0 10px 0;">📊 場地總覽</h2>
         <div class="stat-card">
             <div style="color: #888; font-size: 0.8rem;">收租進度 (36台)</div>
-            <div style="display: flex; gap: 30px; margin-top: 10px;">
-                <div><span style="color: var(--paid); font-size: 2rem;" id="stat-paid">0</span> <small>已繳</small></div>
-                <div><span style="color: var(--unpaid); font-size: 2rem;" id="stat-unpaid">0</span> <small>未繳</small></div>
+            <div style="display: flex; gap: 30px; margin-top: 5px;">
+                <div><span style="color: var(--paid); font-size: 1.8rem;" id="stat-paid">0</span> <small>已繳</small></div>
+                <div><span style="color: var(--unpaid); font-size: 1.8rem;" id="stat-unpaid">0</span> <small>未繳</small></div>
             </div>
         </div>
         <div class="stat-card" style="border-left-color: gold;">
             <div style="color: #888; font-size: 0.8rem;">國庫餘額</div>
-            <div style="font-size: 2.2rem; font-weight: bold; color: gold; margin-top: 10px;">$ <span id="stat-balance">0</span></div>
+            <div style="font-size: 2rem; font-weight: bold; color: gold; margin-top: 5px;">$ <span id="stat-balance">0</span></div>
         </div>
     </div>
 
-    <!-- 支出紀錄 -->
+    <!-- 支出 -->
     <div id="page-expenses" class="page">
-        <h2 style="color: var(--primary); margin-top: 0;">💸 支出紀錄</h2>
+        <h2 style="color: var(--primary); margin: 0 0 10px 0;">💸 支出管理</h2>
         <div class="stat-card">
-            <input type="text" id="exp-title" placeholder="支出項目">
+            <input type="text" id="exp-title" placeholder="項目">
             <input type="number" id="exp-amount" placeholder="金額">
-            <button class="btn-action" onclick="addExpense()">新增紀錄</button>
+            <button class="btn-action" onclick="addExpense()">新增</button>
         </div>
         <div id="expense-list"></div>
     </div>
 
-    <!-- 台主平面圖 (修正位置) -->
+    <!-- 台主平面圖 (一頁全覽版) -->
     <div id="page-machines" class="page">
         <div class="map-wrapper">
-            <!-- 33-35 橫排 -->
             <div class="back-wall-row" id="area-back"></div>
             
             <div class="floor-plan">
                 <!-- 左牆 1-10 -->
                 <div class="column" id="col-left"></div>
                 
-                <!-- 島櫃：對齊 18 與 36 -->
+                <!-- 島櫃 -->
                 <div class="island-group">
                     <div class="column">
                         <div id="list-18-23" class="column"></div>
@@ -157,23 +149,22 @@
                     <div class="column" id="col-mid-right"></div>
                 </div>
 
-                <!-- 右牆：31,32 往後，11-16 往前 -->
-                <div class="column" style="justify-content: space-between; height: 515px;">
+                <!-- 右牆 -->
+                <div class="column" style="justify-content: space-between; height: 498px;">
                     <div class="column" id="right-mega"></div>
                     <div class="column" id="right-normal"></div>
                 </div>
             </div>
         </div>
-        <div style="text-align: center; color: #444; font-size: 0.7rem; margin-top: 20px; letter-spacing: 5px;">▲ 入口處 ▲</div>
+        <div style="text-align: center; color: #333; font-size: 0.7rem; margin-top: 8px; letter-spacing: 5px;">▲ 入口處 ▲</div>
     </div>
 
-    <!-- 國庫管理 -->
+    <!-- 國庫 -->
     <div id="page-treasury" class="page">
-        <h2 style="color: var(--primary); margin-top: 0;">🏦 國庫帳戶</h2>
+        <h2 style="color: var(--primary); margin: 0 0 10px 0;">🏦 國庫帳戶</h2>
         <div class="stat-card">
-            <label>更新餘額</label>
-            <input type="number" id="manual-balance" placeholder="輸入金額">
-            <button class="btn-action" onclick="updateTreasury()">同步國庫</button>
+            <input type="number" id="manual-balance" placeholder="金額">
+            <button class="btn-action" onclick="updateTreasury()">同步餘額</button>
         </div>
     </div>
 
@@ -185,11 +176,11 @@
         <div class="nav-item" onclick="switchPage('treasury', this)"><span>🏦</span>國庫</div>
     </div>
 
-    <!-- 彈窗 -->
+    <!-- 編輯彈窗 -->
     <div class="overlay" id="overlay" onclick="closeModal()"></div>
     <div id="modal">
-        <h3 id="m-title" style="margin:0 0 10px 0; color: var(--primary);">台主資料</h3>
-        <input type="text" id="m-owner" placeholder="姓名">
+        <h3 id="m-title" style="margin:0 0 10px 0; color: var(--primary);">資料編輯</h3>
+        <input type="text" id="m-owner" placeholder="台主姓名">
         <input type="tel" id="m-phone" placeholder="電話">
         <select id="m-status">
             <option value="paid">✅ 已繳租金</option>
