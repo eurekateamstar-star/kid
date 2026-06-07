@@ -64,10 +64,9 @@
 
         label { display: block; font-size: 0.75rem; color: #666; margin-top: 10px; }
         
-        /* 修正日期框爆掉的樣式 */
         input, select { 
             width: 100%; 
-            height: 48px; /* 固定高度 */
+            height: 48px;
             padding: 0 12px; 
             margin: 5px 0; 
             background: #222; 
@@ -76,11 +75,10 @@
             border-radius: 8px; 
             box-sizing: border-box; 
             font-size: 1rem;
-            -webkit-appearance: none; /* 移除 iOS 預設樣式 */
+            -webkit-appearance: none;
             appearance: none;
         }
 
-        /* 針對日期欄位微調 */
         input[type="date"], input[type="datetime-local"] {
             display: flex;
             align-items: center;
@@ -103,6 +101,8 @@
         .status-btn { flex: 1; padding: 15px; border-radius: 8px; border: 2px solid #333; background: #111; color: #444; text-align: center; font-weight: bold; }
         .status-btn.active-unpaid { background: var(--expense); color: white; border-color: var(--expense); }
         .status-btn.active-paid { background: var(--income); color: white; border-color: var(--income); }
+
+        .cycle-label { font-size: 0.7rem; color: #555; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -110,8 +110,9 @@
     <div id="page-overview" class="page active">
         <h2 style="color: var(--primary); margin:0 0 15px 0;">📊 場地經營總覽</h2>
         <div class="stat-card" style="border-left-color: var(--income);">
-            <div class="dash-label">本月租金實收總額</div>
+            <div class="dash-label">本期租金實收總額</div>
             <div class="dash-val text-income">$ <span id="stat-month-income">0</span></div>
+            <div class="cycle-label" id="cycle-label">統計週期：載入中...</div>
         </div>
         <div class="stat-card" style="border-left-color: gold;">
             <div class="dash-label">國庫當前餘額</div>
@@ -240,7 +241,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const COLL_M = "claw_machines"; const COLL_T = "claw_treasury"; const COLL_LOG = "claw_transactions"; const COLL_SH = "claw_shareholder_logs";
+    const COLL_M = "claw_machines"; const COLL_T = "claw_treasury"; const COLL_LOG = "claw_transactions"; const COLL_SH = "claw_shareholder_logs"; const COLL_SETTINGS = "claw_settings";
 
     const layout = {
         back: [33, 34, 35], left: [1,2,3,4,5,6,7,8,9,10],
@@ -251,6 +252,9 @@
     let currentId = null, currentBalance = 0, oldStatus = "unpaid", selectedStatus = "unpaid", debtList = [];
     let editingId = null, editTarget = "";
     let logCache = {};
+
+    // 換月週期起點，預設為本月1號
+    let cycleStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
     function switchPage(p, el) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('page-'+p).classList.add('active'); el.classList.add('active'); }
     function setStatus(s) { selectedStatus = s; document.getElementById('btn-unpaid').className = 'status-btn' + (s==='unpaid'?' active-unpaid':''); document.getElementById('btn-paid').className = 'status-btn' + (s==='paid'?' active-paid':''); }
@@ -267,12 +271,38 @@
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
+    function formatDate(d) {
+        return `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}`;
+    }
+
+    function updateCycleLabel() {
+        const label = document.getElementById('cycle-label');
+        if (label) {
+            label.innerText = `統計週期：${formatDate(cycleStart)} 起`;
+        }
+    }
+
+    // 重新計算本期租金（供 cycleStart 更新後重算）
+    let allLogs = [];
+    function recalcIncome() {
+        let mSum = 0;
+        allLogs.forEach(d => {
+            if(d.time && d.time.toDate() >= cycleStart && d.type === 'income' && d.title.includes('繳租')) mSum += d.amount;
+        });
+        document.getElementById('stat-month-income').innerText = mSum.toLocaleString();
+        updateCycleLabel();
+    }
+
     async function resetAllStatus() {
-        if(!confirm("確定全場重設為未繳？")) return;
+        if(!confirm("確定全場重設為未繳？\n同時將租金統計週期重設為現在。")) return;
         const batch = db.batch();
-        for (let i = 1; i <= 36; i++) { batch.set(db.collection(COLL_M).doc(`No_${i.toString().padStart(2,'0')}`), { status: "unpaid" }, { merge: true }); }
+        for (let i = 1; i <= 36; i++) {
+            batch.set(db.collection(COLL_M).doc(`No_${i.toString().padStart(2,'0')}`), { status: "unpaid" }, { merge: true });
+        }
         await batch.commit();
-        alert("已重設！");
+        // ✅ 記錄換月時間點
+        await db.collection(COLL_SETTINGS).doc('cycle').set({ lastReset: firebase.firestore.Timestamp.now() });
+        alert("已重設！本期租金統計從現在開始計算。");
     }
 
     async function saveMachine() {
@@ -325,20 +355,33 @@
 
         db.collection(COLL_T).doc('main').onSnapshot(doc => { currentBalance = doc.exists ? doc.data().amount : 0; document.querySelectorAll('.balance-val').forEach(el => el.innerText = currentBalance.toLocaleString()); });
 
-        const now = new Date(); const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        // ✅ 監聽換月週期設定
+        db.collection(COLL_SETTINGS).doc('cycle').onSnapshot(doc => {
+            if(doc.exists && doc.data().lastReset) {
+                cycleStart = doc.data().lastReset.toDate();
+            } else {
+                // 若從未換月，預設本月1號
+                const now = new Date();
+                cycleStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+            recalcIncome();
+        });
+
         db.collection(COLL_LOG).orderBy('time', 'desc').limit(30).onSnapshot(snap => {
-            let mSum = 0, h = "";
+            allLogs = [];
+            let h = "";
             snap.forEach(doc => {
                 const d = doc.data(); 
-                logCache[doc.id] = d; 
-                if(d.time && d.time.toDate() >= startOfMonth && d.type === 'income' && d.title.includes('繳租')) mSum += d.amount;
+                logCache[doc.id] = d;
+                allLogs.push(d);
                 const cls = d.type==='income'?'text-income':'text-expense';
                 h += `<div class="history-item" onclick="openEditLog('${doc.id}', 'treasury')">
                     <div class="item-info"><span class="item-time">${formatTime(d.time)}</span><b class="${cls}">【${d.type==='income'?'收入':'支出'}】</b>${d.title}</div>
                     <span class="${cls}">${d.type==='income'?'+':'-'}$${d.amount.toLocaleString()}</span></div>`;
             });
-            document.getElementById('stat-month-income').innerText = mSum.toLocaleString();
-            document.getElementById('mini-history').innerHTML = h; document.getElementById('full-history').innerHTML = h;
+            recalcIncome();
+            document.getElementById('mini-history').innerHTML = h;
+            document.getElementById('full-history').innerHTML = h;
         });
 
         db.collection(COLL_SH).orderBy('time','desc').onSnapshot(snap => {
