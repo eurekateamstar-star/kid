@@ -282,12 +282,17 @@
         }
     }
 
-    // 重新計算本期租金（供 cycleStart 更新後重算）
+    // 重新計算本期租金：直接從 Firestore 撈，不依賴 allLogs
     let allLogs = [];
-    function recalcIncome() {
+    async function recalcIncome() {
+        const snap = await db.collection(COLL_LOG)
+            .where('type', '==', 'income')
+            .where('time', '>=', firebase.firestore.Timestamp.fromDate(cycleStart))
+            .get();
         let mSum = 0;
-        allLogs.forEach(d => {
-            if(d.time && d.time.toDate() >= cycleStart && d.type === 'income' && d.title.includes('繳租')) mSum += d.amount;
+        snap.forEach(function(doc) {
+            const d = doc.data();
+            if(d.title && d.title.includes('繳租')) mSum += d.amount;
         });
         document.getElementById('stat-month-income').innerText = mSum.toLocaleString();
         updateCycleLabel();
@@ -312,6 +317,7 @@
         closeAllModals();
         if (oldStatus === "unpaid" && selectedStatus === "paid") { await recordTransaction('income', `${dNum} 繳租 - ${owner}`, total, today); }
         await db.collection(COLL_M).doc(currentId).set({ displayNum: dNum, owner, rent, acFee: ac, actFee: act, status: selectedStatus }, {merge:true});
+        recalcIncome();
     }
 
     async function recordTransaction(type, title, amount, dateStr) {
