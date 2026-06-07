@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>ClawOne Pro 財務管理</title>
+    <title>ClawOne Pro 穩定版</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -15,7 +14,6 @@
             --primary: #00d2ff; --paid: #4CAF50; --unpaid: #F44336;
             --bg: #000; --card: #151515;
             --box-w: 48px; --box-h: 48px; --gap: 2px;
-            --big-w: 68px; --big-h: 98px; 
         }
 
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; height: 100vh; overflow: hidden; box-sizing: border-box; }
@@ -28,21 +26,14 @@
         .nav-item.active { color: var(--primary); font-weight: bold; }
         .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 3px; }
 
-        /* 卡片與元件 */
+        /* 卡片與流水帳 */
         .stat-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
-        .history-item { display: flex; align-items: center; padding: 10px 5px; border-bottom: 1px solid #222; font-size: 0.8rem; }
-        .history-info { flex: 1; }
-        .history-time { font-size: 0.65rem; color: #666; display: block; }
-        .history-amt { font-weight: bold; margin: 0 10px; text-align: right; }
+        .history-item { display: flex; justify-content: space-between; padding: 12px 5px; border-bottom: 1px solid #222; font-size: 0.85rem; }
         .income-text { color: var(--paid); } .expense-text { color: var(--unpaid); }
 
-        /* 輸入框與按鈕 */
-        input { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        .btn-action { width: 100%; padding: 15px; background: var(--primary); color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; }
-        
-        /* 狀態切換按鈕組 */
+        /* 狀態切換按鈕 */
         .status-toggle-group { display: flex; gap: 10px; margin: 10px 0; }
-        .status-btn { flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #333; background: #111; color: #666; text-align: center; font-weight: bold; transition: 0.2s; }
+        .status-btn { flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #333; background: #111; color: #666; text-align: center; font-weight: bold; }
         .status-btn.active-unpaid { background: var(--unpaid); color: white; border-color: var(--unpaid); }
         .status-btn.active-paid { background: var(--paid); color: white; border-color: var(--paid); }
 
@@ -51,17 +42,16 @@
         .back-wall-row { display: flex; gap: 10px; justify-content: center; width: 100%; margin-bottom: 5px; }
         .floor-plan { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; min-height: 500px; }
         .column { display: flex; flex-direction: column; gap: var(--gap); align-items: center; }
-        .island-group { display: flex; gap: 0; align-items: flex-end; }
         .machine { width: var(--box-w); height: var(--box-h); background: #1a1a1a; border: 1px solid #333; border-top: 3px solid #555; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden; }
-        .big-machine { width: var(--big-w); height: var(--big-h); border: 1.2px solid gold; border-top: 6px solid #555; margin-right: 15px; }
+        .big-machine { width: 68px; height: 98px; border: 1.2px solid gold; border-top: 6px solid #555; margin-right: 15px; }
         .mega-machine { width: 68px; height: 68px; border: 2px solid var(--primary); border-top: 6px solid #555; }
         .paid { border-top-color: var(--paid) !important; } .unpaid { border-top-color: var(--unpaid) !important; }
-        .machine b { font-size: 0.85rem; color: #fff; } .machine small { font-size: 0.55rem; color: #aaa; text-align: center; }
 
         /* 彈窗 */
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 25px; border-radius: 15px; z-index: 2000; width: 90%; max-width: 450px; border: 1px solid #333; }
+        .modal { display: none; position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 25px; border-radius: 15px; z-index: 2000; width: 90%; max-width: 450px; border: 1px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1500; }
-        .total-box { background: #333; padding: 12px; border-radius: 8px; text-align: right; color: var(--primary); font-weight: bold; margin-top: 10px; font-size: 1.1rem; }
+        input { width: 100%; padding: 12px; margin: 5px 0 10px 0; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .btn-action { width: 100%; padding: 15px; background: var(--primary); color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -70,11 +60,11 @@
     <div id="page-overview" class="page active">
         <h2 style="color: var(--primary); margin-top: 0;">📊 場地總覽</h2>
         <div class="stat-card" style="border-left-color: gold;">
-            <div style="color: #888; font-size: 0.8rem;">國庫餘額</div>
-            <div style="font-size: 2.2rem; font-weight: bold; color: gold;">$ <span id="stat-balance">0</span></div>
+            <div style="color: #888; font-size: 0.8rem;">國庫總餘額</div>
+            <div style="font-size: 2.2rem; font-weight: bold; color: gold;">$ <span class="balance-val">0</span></div>
         </div>
         <div class="stat-card">
-            <div style="color: #888; font-size: 0.8rem;">收租進度 (36台)</div>
+            <div style="color: #888; font-size: 0.8rem;">本月繳費統計</div>
             <div style="display: flex; gap: 30px; margin-top: 5px;">
                 <div><span style="color: var(--paid); font-size: 1.8rem;" id="stat-paid">0</span> <small>已繳</small></div>
                 <div><span style="color: var(--unpaid); font-size: 1.8rem;" id="stat-unpaid">0</span> <small>未繳</small></div>
@@ -83,10 +73,16 @@
         <div id="mini-history"></div>
     </div>
 
-    <!-- 支出 (股東) -->
+    <!-- 支出 (股東均分) -->
     <div id="page-expenses" class="page">
-        <h2 style="color: var(--primary); margin-top: 0;">🤝 股東均分</h2>
-        <div class="stat-card" id="settlement-ui">支出均分邏輯載入中...</div>
+        <h2 style="color: var(--primary); margin-top: 0;">🤝 股東均分支出</h2>
+        <div class="stat-card">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><b>柏昇</b> <input type="number" id="pay-1" value="0"></div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><b>士傑</b> <input type="number" id="pay-2" value="0"></div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><b>洋佑</b> <input type="number" id="pay-3" value="0"></div>
+            <button class="btn-action" onclick="saveSettlement()">計算並儲存</button>
+        </div>
+        <div id="settlement-list" style="padding:10px; color:var(--primary);"></div>
     </div>
 
     <!-- 台主平面圖 -->
@@ -95,7 +91,7 @@
             <div class="back-wall-row" id="area-back"></div>
             <div class="floor-plan">
                 <div class="column" id="col-left"></div>
-                <div class="island-group">
+                <div class="column" style="flex-direction:row; gap:0;">
                     <div class="column"><div id="list-18-23" class="column"></div><div id="pos-17"></div></div>
                     <div class="column" id="col-mid-right"></div>
                 </div>
@@ -110,6 +106,16 @@
     <!-- 國庫流水帳 -->
     <div id="page-treasury" class="page">
         <h2 style="color: var(--primary); margin-top: 0;">🏦 國庫流水帳</h2>
+        <div class="stat-card" style="border-left-color: gold;">
+            <div style="color: #888; font-size: 0.8rem;">當前餘額</div>
+            <div style="font-size: 1.5rem; font-weight: bold; color: gold;">$ <span class="balance-val">0</span></div>
+        </div>
+        <div class="stat-card">
+            <label>收入/支出說明</label><input type="text" id="t-desc" placeholder="如：店租、雜項收入">
+            <label>金額</label><input type="number" id="t-amount" placeholder="輸入金額">
+            <button class="btn-action" onclick="addTransaction('income')">記為收入</button>
+            <button class="btn-action" style="background:#444; color:white; margin-top:5px;" onclick="addTransaction('expense')">記為支出</button>
+        </div>
         <div id="full-history"></div>
     </div>
 
@@ -122,31 +128,25 @@
 
     <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
 
-    <!-- 機器管理彈窗 (修正狀態切換) -->
+    <!-- 機器管理彈窗 -->
     <div id="modal-machine" class="modal">
         <h3 style="margin:0; color: var(--primary);">租金管理</h3>
-        <label style="font-size:0.8rem; color:#666;">台主姓名</label>
-        <input type="text" id="m-owner" placeholder="請輸入姓名">
-        
+        <input type="text" id="m-owner" placeholder="台主姓名">
         <div style="display:flex; gap:10px;">
-            <div style="flex:1;"><label style="font-size:0.7rem; color:#666;">場租</label><input type="number" id="m-rent" oninput="calcTotal()"></div>
-            <div style="flex:1;"><label style="font-size:0.7rem; color:#666;">冷氣</label><input type="number" id="m-acFee" oninput="calcTotal()"></div>
+            <input type="number" id="m-rent" placeholder="場租" oninput="calcTotal()">
+            <input type="number" id="m-acFee" placeholder="冷氣" oninput="calcTotal()">
         </div>
-        <label style="font-size:0.7rem; color:#666;">活動費</label>
-        <input type="number" id="m-actFee" oninput="calcTotal()">
-
-        <div class="total-box">應收總計：$ <span id="m-total">0</span></div>
-
-        <label style="margin-top:15px; display:block;">租金狀態 (點擊切換)</label>
+        <input type="number" id="m-actFee" placeholder="活動費" oninput="calcTotal()">
+        <div style="text-align:right; font-weight:bold; color:var(--primary); margin:10px 0;">總計：$<span id="m-total">0</span></div>
         <div class="status-toggle-group">
             <div id="btn-unpaid" class="status-btn" onclick="setStatus('unpaid')">❌ 未繳費</div>
             <div id="btn-paid" class="status-btn" onclick="setStatus('paid')">✅ 已繳費</div>
         </div>
-        
-        <button class="btn-action" onclick="saveMachine()">確認存檔並關閉</button>
+        <button class="btn-action" onclick="saveMachine()">確認存檔</button>
     </div>
 
 <script>
+    // --- 請填入 Firebase Config ---
     const firebaseConfig = {
         apiKey: "AIzaSyD9oJirgoJCTU7h-ODfSpfwC80E5fqze2A",
         authDomain: "clawone-6445c.firebaseapp.com",
@@ -157,7 +157,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const COLL_M = "claw_machines"; const COLL_T = "claw_treasury"; const COLL_LOG = "claw_transactions";
+    const COLL_M = "claw_machines"; const COLL_T = "claw_treasury"; const COLL_LOG = "claw_transactions"; const COLL_SH = "claw_shareholders";
 
     const layout = {
         back: [33, 34, 35], left: [1,2,3,4,5,6,7,8,9,10],
@@ -167,6 +167,12 @@
 
     let currentId = null; let currentBalance = 0; let oldStatus = "unpaid"; let selectedStatus = "unpaid";
 
+    function switchPage(p, el) { 
+        document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); 
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
+        document.getElementById('page-'+p).classList.add('active'); el.classList.add('active'); 
+    }
+
     function setStatus(s) {
         selectedStatus = s;
         document.getElementById('btn-unpaid').className = 'status-btn' + (s === 'unpaid' ? ' active-unpaid' : '');
@@ -174,23 +180,23 @@
     }
 
     async function saveMachine() {
-        const d = {
-            owner: document.getElementById('m-owner').value,
-            rent: parseInt(document.getElementById('m-rent').value) || 0,
-            acFee: parseInt(document.getElementById('m-acFee').value) || 0,
-            actFee: parseInt(document.getElementById('m-actFee').value) || 0,
-            status: selectedStatus
-        };
-        const total = d.rent + d.acFee + d.actFee;
+        const owner = document.getElementById('m-owner').value;
+        const rent = parseInt(document.getElementById('m-rent').value) || 0;
+        const ac = parseInt(document.getElementById('m-acFee').value) || 0;
+        const act = parseInt(document.getElementById('m-actFee').value) || 0;
+        const total = rent + ac + act;
 
-        if (oldStatus === "unpaid" && selectedStatus === "paid") {
-            await recordTransaction('income', `${currentId} 繳費 - ${d.owner}`, total, currentId);
-        } else if (oldStatus === "paid" && selectedStatus === "unpaid") {
-            await deleteLastMachineIncome(currentId);
-        }
-
-        await db.collection(COLL_M).doc(currentId).set(d, {merge:true});
+        // 立即關閉視窗，增加操作流暢度
         closeAllModals();
+
+        try {
+            if (oldStatus === "unpaid" && selectedStatus === "paid") {
+                await recordTransaction('income', `${currentId} 繳費 - ${owner}`, total, currentId);
+            } else if (oldStatus === "paid" && selectedStatus === "unpaid") {
+                await deleteLastMachineIncome(currentId);
+            }
+            await db.collection(COLL_M).doc(currentId).set({ owner, rent, acFee: ac, actFee: act, status: selectedStatus }, {merge:true});
+        } catch(e) { console.error(e); }
     }
 
     async function recordTransaction(type, title, amount, machineId = null) {
@@ -200,12 +206,20 @@
     }
 
     async function deleteLastMachineIncome(mId) {
-        const snap = await db.collection(COLL_LOG).where('machineId', '==', mId).where('type', '==', 'income').orderBy('time', 'desc').limit(1).get();
+        const snap = await db.collection(COLL_LOG).where('machineId', '==', mId).where('type', '==', 'income').limit(1).get();
         if (!snap.empty) {
             const logDoc = snap.docs[0];
             await db.collection(COLL_LOG).doc(logDoc.id).delete();
             await db.collection(COLL_T).doc('main').set({ amount: currentBalance - logDoc.data().amount });
         }
+    }
+
+    function addTransaction(type) {
+        const amt = parseInt(document.getElementById('t-amount').value);
+        const desc = document.getElementById('t-desc').value;
+        if(!amt || !desc) return alert("請輸入說明與金額");
+        recordTransaction(type, desc, amt);
+        document.getElementById('t-amount').value = ""; document.getElementById('t-desc').value = "";
     }
 
     function openMachineModal(id) {
@@ -222,34 +236,53 @@
         });
     }
 
-    // 基礎功能
-    function switchPage(p, el) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('page-'+p).classList.add('active'); el.classList.add('active'); }
-    function calcTotal() { const r=parseInt(document.getElementById('m-rent').value)||0, ac=parseInt(document.getElementById('m-acFee').value)||0, act=parseInt(document.getElementById('m-actFee').value)||0; document.getElementById('m-total').innerText = (r+ac+act).toLocaleString(); }
-    function closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); document.getElementById('overlay').style.display='none'; }
-    function createMachine(n, t='normal') {
-        const id = `No_${n.toString().padStart(2,'0')}`;
-        const div = document.createElement('div');
-        div.className = (t==='big')?'machine big-machine':(t==='mega'?'machine mega-machine':'machine');
-        div.id = id; div.innerHTML = `<b>${n}</b><small id="name-${id}"></small>`;
-        div.onclick = () => openMachineModal(id);
-        db.collection(COLL_M).doc(id).onSnapshot(doc => { if(doc.exists) { const d = doc.data(); document.getElementById(`name-${id}`).innerText = d.owner || ""; div.classList.remove('paid', 'unpaid'); div.classList.add(d.status || 'unpaid'); updateOverviewStats(); }});
-        return div;
+    function saveSettlement() {
+        const pays = [
+            { name: "柏昇", amt: parseInt(document.getElementById('pay-1').value) || 0 },
+            { name: "士傑", amt: parseInt(document.getElementById('pay-2').value) || 0 },
+            { name: "洋佑", amt: parseInt(document.getElementById('pay-3').value) || 0 }
+        ];
+        db.collection(COLL_SH).doc('current').set({ pays });
     }
+
     function init() {
-        layout.back.forEach(n => document.getElementById('area-back').appendChild(createMachine(n)));
-        layout.left.forEach(n => document.getElementById('col-left').appendChild(createMachine(n)));
-        layout.midLeft.forEach(n => document.getElementById('list-18-23').appendChild(createMachine(n)));
-        layout.midRight.forEach(n => document.getElementById('col-mid-right').appendChild(createMachine(n)));
-        layout.rightMega.forEach(n => document.getElementById('right-mega').appendChild(createMachine(n, 'mega')));
-        layout.rightNormal.forEach(n => document.getElementById('right-normal').appendChild(createMachine(n)));
-        document.getElementById('pos-17').appendChild(createMachine(17, 'big'));
-        db.collection(COLL_T).doc('main').onSnapshot(doc => { if(doc.exists) { currentBalance = doc.data().amount; document.getElementById('stat-balance').innerText = currentBalance.toLocaleString(); }});
+        // 初始化平面圖
+        const render = (list, id, type) => list.forEach(n => {
+            const mId = `No_${n.toString().padStart(2,'0')}`;
+            const div = document.createElement('div');
+            div.className = (type==='big')?'machine big-machine':(type==='mega'?'machine mega-machine':'machine');
+            div.innerHTML = `<b>${n}</b><small id="n-${mId}"></small>`;
+            div.onclick = () => openMachineModal(mId);
+            document.getElementById(id).appendChild(div);
+            db.collection(COLL_M).doc(mId).onSnapshot(doc => { if(doc.exists){ const d=doc.data(); document.getElementById(`n-${mId}`).innerText=d.owner||""; div.classList.remove('paid','unpaid'); div.classList.add(d.status||'unpaid'); updateOverviewStats(); }});
+        });
+        render(layout.back, 'area-back'); render(layout.left, 'col-left'); render(layout.midLeft, 'list-18-23'); render(layout.midRight, 'col-mid-right'); render(layout.rightMega, 'right-mega', 'mega'); render(layout.rightNormal, 'right-normal'); render([17], 'pos-17', 'big');
+
+        // 監聽餘額
+        db.collection(COLL_T).doc('main').onSnapshot(doc => {
+            currentBalance = doc.exists ? doc.data().amount : 0;
+            document.querySelectorAll('.balance-val').forEach(el => el.innerText = currentBalance.toLocaleString());
+        });
+
+        // 監聽歷史紀錄
         db.collection(COLL_LOG).orderBy('time','desc').limit(20).onSnapshot(snap => {
-            let h = ""; snap.forEach(doc => { const d = doc.data(); h += `<div class="history-item"><div class="history-info"><b>${d.title}</b></div><span class="history-amt ${d.type==='income'?'income-text':'expense-text'}">${d.type==='income'?'+':'-'}$${d.amount.toLocaleString()}</span></div>`; });
+            let h = ""; snap.forEach(doc => { const d = doc.data(); h += `<div class="history-item"><span>${d.title}</span><span class="${d.type==='income'?'income-text':'expense-text'}">${d.type==='income'?'+':'-'}$${d.amount.toLocaleString()}</span></div>`; });
             document.getElementById('mini-history').innerHTML = h; document.getElementById('full-history').innerHTML = h;
         });
+
+        // 監聽股東
+        db.collection(COLL_SH).doc('current').onSnapshot(doc => {
+            if(!doc.exists) return;
+            const p = doc.data().pays;
+            document.getElementById('pay-1').value = p[0].amt; document.getElementById('pay-2').value = p[1].amt; document.getElementById('pay-3').value = p[2].amt;
+            const avg = p.reduce((a,b)=>a+b.amt,0)/3;
+            document.getElementById('settlement-list').innerText = `每人應付: $${Math.round(avg).toLocaleString()}`;
+        });
     }
+
     function updateOverviewStats() { db.collection(COLL_M).get().then(snap => { let p=0,u=0; snap.forEach(doc => { doc.data().status==='paid'?p++:u++; }); document.getElementById('stat-paid').innerText=p; document.getElementById('stat-unpaid').innerText=u; }); }
+    function calcTotal() { const r=parseInt(document.getElementById('m-rent').value)||0, ac=parseInt(document.getElementById('m-acFee').value)||0, act=parseInt(document.getElementById('m-actFee').value)||0; document.getElementById('m-total').innerText = (r+ac+act).toLocaleString(); }
+    function closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); document.getElementById('overlay').style.display='none'; }
     init();
 </script>
 </body>
