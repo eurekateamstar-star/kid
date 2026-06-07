@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>娃娃機場地管理</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -12,49 +13,49 @@
             --paid: #4CAF50;
             --unpaid: #F44336;
             --bg: #000000;
-            --m-bg: #111;
+            --m-bg: #151515;
             --border: #333;
-            /* 縮小尺寸以符合一頁顯示 (10台垂直約 420px) */
-            --box-w: 38px; 
-            --box-h: 40px;
-            --big-w: 55px;
-            --big-h: 65px;
-            --mega-w: 60px;
-            --mega-h: 60px;
+            /* 調整放大尺寸 */
+            --box-w: 46px; 
+            --box-h: 48px;
+            --big-w: 65px;
+            --big-h: 80px;
+            --mega-w: 75px;
+            --mega-h: 75px;
         }
 
         body { 
             font-family: -apple-system, sans-serif; 
             background: var(--bg); color: white; margin: 0; 
-            padding: 10px 5px; 
+            padding: 10px 10px; 
             display: flex; flex-direction: column; align-items: center;
-            height: 100vh; overflow: hidden; /* 禁止滑動以達成一頁式 */
+            height: 100vh; overflow: hidden; /* 確保一頁看全 */
+            box-sizing: border-box;
         }
 
-        /* 標題縮小 */
-        h2 { color: #00d2ff; font-size: 0.9rem; margin: 5px 0; letter-spacing: 1px; }
+        h2 { color: #00d2ff; font-size: 1rem; margin: 5px 0 15px 0; letter-spacing: 2px; }
 
         .map-container {
             width: 100%;
+            max-width: 400px; /* 限制寬度符合一般手機 */
             display: flex; flex-direction: column; 
-            gap: 15px; /* 縮短後方與主場的距離 */
+            gap: 20px; 
             align-items: center;
         }
 
-        /* 後方牆面 (33-35) 往前移 */
-        .back-wall { display: flex; gap: 8px; justify-content: center; width: 100%; }
+        /* 後方牆面 (33-35) */
+        .back-wall { display: flex; gap: 12px; justify-content: center; width: 100%; }
 
-        /* 主場佈局：底部對齊入口基準線 */
+        /* 主場佈局：左右拉開 */
         .floor-plan {
             display: flex; 
-            justify-content: center; /* 居中 */
+            justify-content: space-between; /* 關鍵：左右推到底 */
             align-items: flex-end; 
-            gap: 22px; /* 這裡就是走道寬度 */
             width: 100%;
-            padding-bottom: 10px;
+            min-height: 520px; /* 容納 10 台垂直的高度 */
         }
 
-        .column { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+        .column { display: flex; flex-direction: column; gap: 3px; align-items: center; }
 
         /* 中間島櫃：兩排貼緊 */
         .island-group { 
@@ -63,118 +64,123 @@
             align-items: stretch;
         }
 
-        /* 左排：往下切齊入口基準線 */
+        /* 島左：往下切齊入口 (18-23+17) */
         .island-left { justify-content: flex-end; }
-        /* 右排：往後切齊店底 */
+        /* 島右：往後切齊店底 (24-30) */
         .island-right { justify-content: flex-start; }
 
         /* 右側牆：31,32 往後放，11-16 往前切齊 */
         .right-section {
             display: flex; flex-direction: column; 
             justify-content: space-between; 
-            height: 418px; /* 根據 10 台的高度調整 */
+            height: 507px; /* 對應左側 10 台的高度 */
         }
 
-        /* 機台基礎樣式 */
+        /* 機器基礎樣式 */
         .machine {
             width: var(--box-w); height: var(--box-h); 
             background: var(--m-bg);
             border: 1px solid var(--border);
-            border-top: 3px solid #555;
-            border-radius: 2px; font-size: 0.65rem; 
+            border-top: 4px solid #555;
+            border-radius: 3px; font-size: 0.75rem; 
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             box-sizing: border-box;
         }
         
-        .machine:active { background: #222; }
+        .machine:active { background: #333; transform: scale(0.95); }
 
-        /* 17 號大台：左側 */
+        /* 17 號大台 */
         .big-machine { 
             width: var(--big-w); height: var(--big-h); 
-            border: 1px solid gold; border-top: 5px solid #555;
-            margin-right: 17px; z-index: 5;
+            border: 1.5px solid gold; border-top: 6px solid #555;
+            margin-right: 20px; /* 大台略微往左偏 */
+            z-index: 5;
         }
 
         /* 31, 32 號 Mega 台 */
         .mega-machine { 
             width: var(--mega-w); height: var(--mega-h); 
-            border: 1.5px solid #00d2ff; border-top: 5px solid #555;
+            border: 2px solid #00d2ff; border-top: 6px solid #555;
         }
 
         /* 顏色狀態 */
-        .paid { border-top-color: var(--paid) !important; }
-        .unpaid { border-top-color: var(--unpaid) !important; }
+        .paid { border-top-color: var(--paid) !important; box-shadow: inset 0 2px 0 var(--paid); }
+        .unpaid { border-top-color: var(--unpaid) !important; box-shadow: inset 0 2px 0 var(--unpaid); }
 
-        .machine span { font-weight: bold; margin-bottom: 1px; }
-        .machine small { font-size: 0.5rem; color: #888; text-align: center; width: 90%; overflow: hidden; white-space: nowrap; }
+        .machine span { font-weight: bold; margin-bottom: 2px; }
+        .machine small { font-size: 0.6rem; color: #888; text-align: center; width: 90%; overflow: hidden; white-space: nowrap; }
 
         /* 入口標記 */
         .entrance-mark { 
-            margin-top: 5px; color: #444; font-size: 0.7rem; 
-            font-weight: bold; letter-spacing: 5px;
+            margin-top: 15px; color: #444; font-size: 0.8rem; 
+            font-weight: bold; letter-spacing: 8px;
         }
 
         /* 彈窗 */
         #modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #1a1a1a; color: white; padding: 20px; border-radius: 10px; z-index: 100; 
-            width: 80%; max-width: 280px; border: 1px solid #444;
+            background: #1a1a1a; color: white; padding: 25px; border-radius: 15px; z-index: 100; 
+            width: 85%; max-width: 300px; border: 1px solid #444;
         }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 99; }
         input, select { 
-            width: 100%; padding: 10px; margin: 8px 0; 
+            width: 100%; padding: 15px; margin: 8px 0; 
             background: #333; color: white; border: 1px solid #444; 
-            border-radius: 5px; box-sizing: border-box; font-size: 1rem;
+            border-radius: 8px; box-sizing: border-box; font-size: 1.1rem;
         }
-        .btn-save { width: 100%; padding: 12px; background: #007AFF; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        .btn-save { width: 100%; padding: 15px; background: #007AFF; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
-    <h2>場地管理 APP (一頁全覽)</h2>
+    <h2>娃娃機場地管理</h2>
 
     <div class="map-container">
-        <!-- 後牆 (33-35) 往前移 -->
+        <!-- 後牆面 (33-35) -->
         <div class="back-wall" id="area-back"></div>
 
         <div class="floor-plan">
-            <!-- 左牆 (01-10) 走道隔開 -->
+            <!-- 左牆牆邊 10 台 (01-10) -->
             <div class="column" id="col-left"></div>
 
-            <!-- 中間島櫃 -->
+            <!-- 中間島櫃：兩排貼合 -->
             <div class="island-group">
+                <!-- 左半部：18-23 下方接 17號 -->
                 <div class="column island-left">
                     <div id="list-18-23" class="column"></div>
-                    <div id="pos-17"></div> <!-- 17在左下角 -->
+                    <div id="pos-17"></div>
                 </div>
+                
+                <!-- 右半部：24-30 (往後切齊) -->
                 <div class="column island-right" id="col-mid-right"></div>
             </div>
 
-            <!-- 右牆 走道隔開 -->
+            <!-- 右牆牆邊 (31,32 往後，11-16 切齊門口) -->
             <div class="right-section">
-                <div class="column" id="right-mega"></div> <!-- 31,32 往後放 -->
-                <div class="column" id="right-normal"></div> <!-- 11-16 切齊入口 -->
+                <div class="column" id="right-mega"></div>
+                <div class="column" id="right-normal"></div>
             </div>
         </div>
         
         <div class="entrance-mark">▲ 入口處 (全體切齊) ▲</div>
     </div>
 
-    <!-- 彈窗系統 -->
+    <!-- 彈窗控制 -->
     <div class="overlay" id="overlay" onclick="closeModal()"></div>
     <div id="modal">
-        <h4 id="m-title" style="margin:0 0 10px 0; color:#00d2ff">機台編輯</h4>
+        <h3 id="m-title" style="margin:0 0 15px 0; color:#00d2ff">編輯資料</h3>
         <input type="text" id="m-owner" placeholder="台主姓名">
         <input type="tel" id="m-phone" placeholder="電話">
         <select id="m-status">
-            <option value="paid">✅ 已繳</option>
-            <option value="unpaid">❌ 未繳</option>
+            <option value="paid">✅ 已繳租金</option>
+            <option value="unpaid">❌ 未繳租金</option>
         </select>
-        <button class="btn-save" onclick="saveData()">儲存</button>
+        <button class="btn-save" onclick="saveData()">確認儲存</button>
     </div>
 
 <script>
+    // --- 這裡請貼入您的 Firebase Config ---
     const firebaseConfig = {
         apiKey: "YOUR_API_KEY",
         authDomain: "YOUR_PROJECT.firebaseapp.com",
