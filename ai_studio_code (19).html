@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>娃娃機場地管理 - 終極放大版</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --paid-color: #4CAF50;
+            --unpaid-color: #f44336;
+            --bg-color: #000000;
+            --machine-bg: #1a1a1a;
+            --border-color: #555;
+            /* --- 終極放大尺寸 --- */
+            --box-size: 80px; 
+            --big-box-w: 110px;  /* 17號寬 */
+            --big-box-h: 130px;  /* 17號高 */
+            --mega-box-w: 120px; /* 31,32號寬 */
+            --mega-box-h: 125px; /* 31,32號高 */
+        }
+
+        body { 
+            font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; 
+            background: var(--bg-color); color: white; margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        h2 { color: #00d2ff; font-size: 1.6rem; margin-bottom: 30px; letter-spacing: 3px; font-weight: bold; }
+
+        /* 總容器放大 */
+        .map-container {
+            width: 100%;
+            max-width: 850px; 
+            display: flex; flex-direction: column; gap: 60px; align-items: center;
+        }
+
+        /* 後方牆面 (33-35) */
+        .back-wall { display: flex; gap: 20px; justify-content: center; width: 100%; }
+
+        /* 主場區佈局 */
+        .floor-plan {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; /* 底部對齊門口基準線 */
+            width: 100%; 
+            min-height: 900px; /* 增加高度空間 */
+            padding-bottom: 40px;
+            border-bottom: 2px solid #333;
+        }
+
+        .column { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+
+        /* 中間島櫃 */
+        .island-group { 
+            display: flex; 
+            gap: 0; 
+            background: transparent; 
+            align-items: stretch; 
+        }
+
+        /* 島櫃左排 (18-23 + 17) - 靠下切齊 */
+        .island-left { justify-content: flex-end; }
+
+        /* 島櫃右排 (24-30) - 往後切齊店底 */
+        .island-right { justify-content: flex-start; }
+
+        /* 右側牆區：31,32往後(上)，11-16往前(下) */
+        .right-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; 
+            height: 100%;
+            min-height: 850px;
+        }
+
+        /* 機器通用樣式 - 終極放大 */
+        .machine {
+            width: var(--box-size); 
+            height: var(--box-size); 
+            background: var(--machine-bg);
+            border: 1px solid var(--border-color);
+            border-top: 6px solid #777;
+            border-radius: 6px; 
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            box-sizing: border-box;
+            transition: all 0.1s;
+        }
+        .machine:active { transform: scale(0.96); background: #222; }
+
+        /* 17 號大台 */
+        .big-machine { 
+            width: var(--big-box-w); 
+            height: var(--big-box-h); 
+            background: #111;
+            border: 2px solid gold; 
+            border-top: 10px solid #777;
+            font-weight: bold;
+            margin-right: 30px; /* 寬度補償 */
+            z-index: 5;
+        }
+
+        /* 31, 32 號超級大台 (Mega) */
+        .mega-machine { 
+            width: var(--mega-box-w); 
+            height: var(--mega-box-h); 
+            background: #111;
+            border: 2.5px solid #00d2ff; 
+            border-top: 10px solid #777;
+            font-weight: bold;
+        }
+
+        /* 狀態顏色 */
+        .paid { border-top-color: var(--paid-color) !important; box-shadow: inset 0 4px 0 var(--paid-color); }
+        .unpaid { border-top-color: var(--unpaid-color) !important; box-shadow: inset 0 4px 0 var(--unpaid-color); }
+
+        /* 文字放大 */
+        .machine span { font-size: 1.4rem; font-weight: 900; color: #fff; margin-bottom: 4px; }
+        .machine small { 
+            font-size: 0.9rem; color: #ccc; 
+            text-align: center; width: 95%; 
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+
+        .entrance-label { margin-top: 30px; color: #666; font-size: 1.2rem; font-weight: bold; letter-spacing: 15px; }
+
+        /* 彈窗放大 */
+        #modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #1a1a1a; color: white; padding: 35px; border-radius: 20px; z-index: 100; 
+            width: 90%; max-width: 450px; border: 1px solid #444;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 99; }
+        input, select { 
+            width: 100%; padding: 18px; margin: 12px 0; 
+            background: #333; color: white; border: 1px solid #555; 
+            border-radius: 10px; box-sizing: border-box; font-size: 1.2rem;
+        }
+        .btn-save { 
+            width: 100%; padding: 20px; background: #007AFF; color: white; 
+            border: none; border-radius: 10px; font-weight: bold; font-size: 1.4rem;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>場地管理 - 終極旗艦版</h2>
+
+    <div class="map-container">
+        <!-- 後牆面 (33-35) -->
+        <div class="back-wall" id="area-back"></div>
+
+        <div class="floor-plan">
+            <!-- 左牆 10 台 (01-10) -->
+            <div class="column" id="col-left"></div>
+
+            <!-- 中間島櫃 -->
+            <div class="island-group">
+                <!-- 左排 (18-23 + 17) - 往前切齊入口 -->
+                <div class="column island-left">
+                    <div id="list-18-23" class="column"></div>
+                    <div id="pos-17"></div>
+                </div>
+                <!-- 右排 (24-30) - 往後切齊店底 -->
+                <div class="column island-right" id="col-mid-right"></div>
+            </div>
+
+            <!-- 右側牆區 -->
+            <div class="right-section">
+                <!-- 31, 32 超級大台 (往後放) -->
+                <div class="column" id="right-mega"></div>
+                <!-- 11-16 一般台 (往前放) -->
+                <div class="column" id="right-normal"></div>
+            </div>
+        </div>
+        
+        <div class="entrance-label">▲ 入口處 ▲</div>
+    </div>
+
+    <!-- 彈窗控制 -->
+    <div class="overlay" id="overlay" onclick="closeModal()"></div>
+    <div id="modal">
+        <h3 id="m-title" style="margin:0 0 20px 0; color:#00d2ff; font-size: 1.5rem;">編輯機台</h3>
+        <label>台主姓名</label><input type="text" id="m-owner" placeholder="請輸入姓名">
+        <label>聯絡電話</label><input type="tel" id="m-phone" placeholder="請輸入電話">
+        <label>租金狀態</label>
+        <select id="m-status">
+            <option value="paid">✅ 已繳租金</option>
+            <option value="unpaid">❌ 未繳租金</option>
+        </select>
+        <button class="btn-save" onclick="saveData()">確認儲存</button>
+    </div>
+
+<script>
+    // --- Firebase 設定 ---
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const layout = {
+        back: [33, 34, 35],
+        left: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        midLeft: [18, 19, 20, 21, 22, 23],
+        midRight: [24, 25, 26, 27, 28, 29, 30],
+        rightMega: [31, 32],
+        rightNormal: [11, 12, 13, 14, 15, 16],
+        big: [17]
+    };
+
+    let currentId = null;
+
+    function createMachine(num, type = 'normal') {
+        const id = `No_${num.toString().padStart(2, '0')}`;
+        const div = document.createElement('div');
+        
+        if(type === 'big') div.className = 'machine big-machine';
+        else if(type === 'mega') div.className = 'machine mega-machine';
+        else div.className = 'machine';
+
+        div.id = id;
+        div.innerHTML = `<span>${num}</span><small id="name-${id}">-</small>`;
+        div.onclick = () => openModal(id);
+
+        db.collection("machines").doc(id).onSnapshot(doc => {
+            if(doc.exists) {
+                const data = doc.data();
+                document.getElementById(`name-${id}`).innerText = data.owner || "待租";
+                div.classList.remove('paid', 'unpaid');
+                div.classList.add(data.status || 'unpaid');
+            }
+        });
+        return div;
+    }
+
+    function init() {
+        layout.back.forEach(n => document.getElementById('area-back').appendChild(createMachine(n)));
+        layout.left.forEach(n => document.getElementById('col-left').appendChild(createMachine(n)));
+        layout.midLeft.forEach(n => document.getElementById('list-18-23').appendChild(createMachine(n)));
+        layout.midRight.forEach(n => document.getElementById('col-mid-right').appendChild(createMachine(n)));
+        layout.rightMega.forEach(n => document.getElementById('right-mega').appendChild(createMachine(n, 'mega')));
+        layout.rightNormal.forEach(n => document.getElementById('right-normal').appendChild(createMachine(n)));
+        document.getElementById('pos-17').appendChild(createMachine(17, 'big'));
+    }
+
+    function openModal(id) {
+        currentId = id;
+        document.getElementById('m-title').innerText = "管理機台：" + id;
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+        db.collection("machines").doc(id).get().then(doc => {
+            if(doc.exists) {
+                const d = doc.data();
+                document.getElementById('m-owner').value = d.owner || "";
+                document.getElementById('m-phone').value = d.phone || "";
+                document.getElementById('m-status').value = d.status || "unpaid";
+            }
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    function saveData() {
+        db.collection("machines").doc(currentId).set({
+            owner: document.getElementById('m-owner').value,
+            phone: document.getElementById('m-phone').value,
+            status: document.getElementById('m-status').value,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => closeModal());
+    }
+
+    init();
+</script>
+</body>
+</html>
