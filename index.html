@@ -313,8 +313,8 @@
         // ✅ 記錄換月時間點
         const now = firebase.firestore.Timestamp.now();
         await db.collection(COLL_SETTINGS).doc('cycle').set({ lastReset: now });
-        // 存入歷史，供報表分期用
-        await db.collection(COLL_SETTINGS).doc('cycle').collection('cycle_history').add({ time: now });
+        // 存入換月歷史（獨立 collection，供報表分期用）
+        await db.collection('claw_cycle_history').add({ time: now });
         alert("已重設！本期租金統計從現在開始計算。");
     }
 
@@ -534,67 +534,67 @@
         const container = document.getElementById('report-container');
         container.innerHTML = '<div style="color:#555; text-align:center; padding:30px;">載入中...</div>';
 
-        // 撈所有換月紀錄，建立週期邊界
-        const cycleSnap = await db.collection(COLL_SETTINGS).doc('cycle').get();
-        // 撈所有 cycle history（每次換月都存一筆）
-        const cycleHistSnap = await db.collection(COLL_SETTINGS).collection('cycle_history').orderBy('time', 'asc').get().catch(() => null);
+        try {
+            // 撈換月歷史（獨立 collection）
+            const histSnap = await db.collection('claw_cycle_history').orderBy('time', 'asc').get();
+            let boundaries = [];
+            histSnap.forEach(function(doc) { boundaries.push(doc.data().time.toDate()); });
 
-        // 建立週期陣列：[{start, end, label}]
-        // 從 cycle_history 取，若沒有就只有當前週期
-        let boundaries = [];
-        if (cycleHistSnap && !cycleHistSnap.empty) {
-            cycleHistSnap.forEach(function(doc) { boundaries.push(doc.data().time.toDate()); });
+            // 若沒有歷史或 cycleStart 不在裡面，補進去
+            const csTime = cycleStart.getTime();
+            const already = boundaries.find(function(b){ return Math.abs(b.getTime() - csTime) < 60000; });
+            if (!already) boundaries.push(new Date(cycleStart));
+            boundaries.sort(function(a,b){ return a-b; });
+
+            // 撈所有流水帳
+            const logSnap = await db.collection(COLL_LOG).orderBy('time', 'asc').get();
+            const allTx = [];
+            logSnap.forEach(function(doc){ allTx.push(doc.data()); });
+
+            if (boundaries.length === 0) {
+                container.innerHTML = '<div style="color:#555; text-align:center; padding:30px;">尚無換月紀錄，請先使用「一鍵換月」</div>';
+                return;
+            }
+
+            let html = '';
+            for (let i = boundaries.length - 1; i >= 0; i--) {
+                const start = boundaries[i];
+                const end = boundaries[i+1] || new Date();
+                const fmt = function(d){ return d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0'); };
+                const endLabel = boundaries[i+1] ? fmt(boundaries[i+1]) : '現在';
+                const isCurrentPeriod = i === boundaries.length - 1;
+
+                let rentIncome = 0, otherIncome = 0, totalExpense = 0;
+                allTx.forEach(function(d) {
+                    if (!d.time) return;
+                    const t = d.time.toDate();
+                    if (t < start || t >= end) return;
+                    if (d.type === 'income') {
+                        if (d.title && d.title.includes('繳租')) rentIncome += d.amount;
+                        else otherIncome += d.amount;
+                    } else {
+                        totalExpense += d.amount;
+                    }
+                });
+                const net = rentIncome + otherIncome - totalExpense;
+
+                html += '<div class="stat-card" style="border-left-color:' + (isCurrentPeriod ? 'var(--primary)' : '#444') + '; margin-bottom:12px;">'
+                    + '<div style="margin-bottom:10px;">'
+                    + '<b style="color:' + (isCurrentPeriod ? 'var(--primary)' : '#aaa') + '; font-size:0.88rem;">'
+                    + (isCurrentPeriod ? '📍 本期　' : '📁 ') + fmt(start) + ' ～ ' + endLabel + '</b>'
+                    + '</div>'
+                    + '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.82rem;">'
+                    + '<div><div style="color:#888; margin-bottom:2px;">租金收入</div><b style="color:var(--income);">+$' + rentIncome.toLocaleString() + '</b></div>'
+                    + '<div><div style="color:#888; margin-bottom:2px;">其他收入</div><b style="color:var(--income);">+$' + otherIncome.toLocaleString() + '</b></div>'
+                    + '<div><div style="color:#888; margin-bottom:2px;">支出</div><b style="color:var(--expense);">-$' + totalExpense.toLocaleString() + '</b></div>'
+                    + '<div><div style="color:#888; margin-bottom:2px;">淨營收</div><b style="color:' + (net>=0?'gold':'var(--expense)') + '; font-size:1.05rem;">$' + net.toLocaleString() + '</b></div>'
+                    + '</div></div>';
+            }
+
+            container.innerHTML = html || '<div style="color:#555; text-align:center; padding:30px;">尚無資料</div>';
+        } catch(e) {
+            container.innerHTML = '<div style="color:var(--expense); text-align:center; padding:30px;">載入失敗：' + e.message + '</div>';
         }
-        // 加上當前 cycleStart
-        if (!boundaries.find(function(b){ return Math.abs(b - cycleStart) < 60000; })) {
-            boundaries.push(cycleStart);
-        }
-        boundaries.sort(function(a,b){ return a-b; });
-
-        // 撈所有流水帳
-        const logSnap = await db.collection(COLL_LOG).orderBy('time', 'asc').get();
-        const allTx = [];
-        logSnap.forEach(function(doc){ allTx.push(doc.data()); });
-
-        // 產生每期報表
-        let html = '';
-        for (let i = 0; i < boundaries.length; i++) {
-            const start = boundaries[i];
-            const end = boundaries[i+1] || new Date();
-            const label = (start.getFullYear()) + '/' + String(start.getMonth()+1).padStart(2,'0') + '/' + String(start.getDate()).padStart(2,'0');
-            const endLabel = boundaries[i+1]
-                ? (boundaries[i+1].getFullYear()) + '/' + String(boundaries[i+1].getMonth()+1).padStart(2,'0') + '/' + String(boundaries[i+1].getDate()).padStart(2,'0')
-                : '現在';
-
-            let rentIncome = 0, otherIncome = 0, totalExpense = 0;
-            allTx.forEach(function(d) {
-                if (!d.time) return;
-                const t = d.time.toDate();
-                if (t < start || t >= end) return;
-                if (d.type === 'income') {
-                    if (d.title && d.title.includes('繳租')) rentIncome += d.amount;
-                    else otherIncome += d.amount;
-                } else {
-                    totalExpense += d.amount;
-                }
-            });
-            const net = rentIncome + otherIncome - totalExpense;
-            const isCurrentPeriod = i === boundaries.length - 1;
-
-            html += '<div class="stat-card" style="border-left-color:' + (isCurrentPeriod ? 'var(--primary)' : '#444') + '; margin-bottom:12px;">'
-                + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">'
-                + '<b style="color:' + (isCurrentPeriod ? 'var(--primary)' : '#aaa') + '; font-size:0.9rem;">'
-                + (isCurrentPeriod ? '📍 本期　' : '') + label + ' ～ ' + endLabel + '</b>'
-                + '</div>'
-                + '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem;">'
-                + '<div><span style="color:#888;">租金收入</span><br><b style="color:var(--income);">+$' + rentIncome.toLocaleString() + '</b></div>'
-                + '<div><span style="color:#888;">其他收入</span><br><b style="color:var(--income);">+$' + otherIncome.toLocaleString() + '</b></div>'
-                + '<div><span style="color:#888;">支出</span><br><b style="color:var(--expense);">-$' + totalExpense.toLocaleString() + '</b></div>'
-                + '<div><span style="color:#888;">淨營收</span><br><b style="color:' + (net>=0?'gold':'var(--expense)') + '; font-size:1rem;">$' + net.toLocaleString() + '</b></div>'
-                + '</div></div>';
-        }
-
-        container.innerHTML = html || '<div style="color:#555; text-align:center; padding:30px;">尚無資料</div>';
     }
 
     function calcTotal() { const r=parseInt(document.getElementById('m-rent').value)||0, ac=parseInt(document.getElementById('m-acFee').value)||0, act=parseInt(document.getElementById('m-actFee').value)||0; document.getElementById('m-total').innerText = (r+ac+act).toLocaleString(); }
