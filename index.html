@@ -63,7 +63,30 @@
         .machine small { font-size: 0.5rem; color: #aaa; text-align: center; width: 95%; white-space: nowrap; overflow: hidden; }
 
         label { display: block; font-size: 0.75rem; color: #666; margin-top: 10px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #222; color: white; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        
+        /* 修正日期框爆掉的樣式 */
+        input, select { 
+            width: 100%; 
+            height: 48px; /* 固定高度 */
+            padding: 0 12px; 
+            margin: 5px 0; 
+            background: #222; 
+            color: white; 
+            border: 1px solid #333; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 1rem;
+            -webkit-appearance: none; /* 移除 iOS 預設樣式 */
+            appearance: none;
+        }
+
+        /* 針對日期欄位微調 */
+        input[type="date"], input[type="datetime-local"] {
+            display: flex;
+            align-items: center;
+            line-height: normal;
+        }
+
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; margin-top: 10px; }
         .btn-income { background: var(--income); color: #000; }
         .btn-expense { background: var(--expense); color: #fff; }
@@ -227,7 +250,7 @@
 
     let currentId = null, currentBalance = 0, oldStatus = "unpaid", selectedStatus = "unpaid", debtList = [];
     let editingId = null, editTarget = "";
-    let logCache = {}; // 暫存資料防止 click 失效
+    let logCache = {};
 
     function switchPage(p, el) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById('page-'+p).classList.add('active'); el.classList.add('active'); }
     function setStatus(s) { selectedStatus = s; document.getElementById('btn-unpaid').className = 'status-btn' + (s==='unpaid'?' active-unpaid':''); document.getElementById('btn-paid').className = 'status-btn' + (s==='paid'?' active-paid':''); }
